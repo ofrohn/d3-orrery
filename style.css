@@ -1,0 +1,7 @@
+/* Copyright 2015 Olaf Frohn https://github.com/ofrohn, see LICENSE */
+body { margin:0; padding:0; background: #000; }
+
+.sun { stroke : #ff0; fill : #ff0; }
+.planet { fill: #fff; stroke: #fff; }
+.sbo { fill: #fff; stroke: transparent; }
+.dot { fill: #fff; stroke: transparent;  }
