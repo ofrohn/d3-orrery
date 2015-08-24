@@ -19,6 +19,8 @@ var transform = function(item, date, gmass) {
     T = Epoch_of_M - (M(deg)/360_deg) / P  = time of perihelion
     v = true anomaly (angle between position and perihelion)
     E = eccentric anomaly
+    
+    Mandatory: a, e, i, N, w|W, M|L, dM|n
 */
   near_parabolic = function(E, e) {
     var anom2 = e > 1.0 ? E*E : -E*E,
@@ -74,7 +76,7 @@ var transform = function(item, date, gmass) {
     if ( (e > 0.8 && M < Math.PI / 3.0) || e > 1.0) {   /* up to 60 degrees */
       trial = M / Math.abs( 1.0 - e);
 
-      if ( trial * trial > 6.0 * Math.abs(1.0 - e)) {  /* cubic term is dominant */
+      if (trial * trial > 6.0 * Math.abs(1.0 - e)) {  /* cubic term is dominant */
         if (M < Math.PI) {
           trial = Math.pow(6.0 * M, 1/3);
         } else {       /* hyperbolic w/ 5th & higher-order terms predominant */
@@ -87,7 +89,7 @@ var transform = function(item, date, gmass) {
       curr = Math.log(M);
     }
     if (e < 1.0) {
-      while(Math.abs( delta_curr) > thresh) {
+      while(Math.abs(delta_curr) > thresh) {
         if ( n_iter++ > 8) {
           err = near_parabolic(curr, e) - M;
         } else {
@@ -112,7 +114,7 @@ var transform = function(item, date, gmass) {
   trueAnomaly = function(dat) {
     var v, r, x, y, r0, g, t;
 
-    if (dat.e == 1.0) {   /* parabolic */
+    if (dat.e === 1.0) {   /* parabolic */
       t = dat.jd0 - dat.T;
       g = dat.w0 * t * 0.5;
 
@@ -145,7 +147,7 @@ var transform = function(item, date, gmass) {
     dat.P = Math.pow(Math.abs(dat.a), 1.5);
     dat.T = dat.jd0 - (dat.M/Math.PI/2) / dat.P;
 
-    if (dat.e != 1.0) {   /* for non-parabolic orbits: */
+    if (dat.e !== 1.0) {   /* for non-parabolic orbits: */
      dat.q = dat.a * (1.0 - dat.e);
      dat.t0 = dat.a * Math.sqrt(Math.abs(dat.a) / gm);
     } else {
@@ -172,26 +174,6 @@ var transform = function(item, date, gmass) {
     dat.l = Trig.normalize(lon);
     dat.b = lat;
     return {l:lon, b:lat}; 
-  },
-  JD = function(dt) {  
-    var yr = dt.getUTCFullYear(),
-        mo = dt.getUTCMonth() + 1,
-        dy = dt.getUTCDate(),
-        frac = dtFrac(dt),
-        j = 0, ly = 0, my, ypmy, djm, djm0 = 2400000.5,
-        IYMIN = -4799,         /* Earliest year allowed (4800BC) */
-        mtab = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];   /* Month lengths in days */
-
-    if (yr < IYMIN) return -1; 
-    if (mo < 1 || mo > 12) return -2; 
-    
-    if ((mo == 2) && (yr%4 === 0) && ((yr%100 !== 0) || (yr%400 === 0))) { ly = 1; }
-    if ( (dy < 1) || (dy > (mtab[mo-1] + ly))) { j = -3; }
-     my = (mo - 14) / 12;
-     ypmy = yr + my;
-     djm = ((1461.0 * (ypmy + 4800.0)) / 4 + (367 * (mo - 2 - 12 * my)) / 12 - (3 * ((ypmy + 4900.0) / 100)) / 4 + dy - 2432076);
-
-     return djm + djm0 + frac;
   };
   
   gm = gmass || Math.pow(0.01720209895, 2);
@@ -227,7 +209,7 @@ var transform = function(item, date, gmass) {
   derive(dat);
   trueAnomaly(dat);
   cartesian(dat);
-  ecliptic(dat);
+  //ecliptic(dat);
   return dat;
 };
 
@@ -235,6 +217,26 @@ var transform = function(item, date, gmass) {
 //gm_earth = 2975247333163008
 
 
+function JD(dt) {  
+    var yr = dt.getUTCFullYear(),
+        mo = dt.getUTCMonth() + 1,
+        dy = dt.getUTCDate(),
+        frac = dtFrac(dt),
+        j = 0, ly = 0, my, ypmy, djm, djm0 = 2400000.5,
+        IYMIN = -4799,         /* Earliest year allowed (4800BC) */
+        mtab = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];   /* Month lengths in days */
+
+    if (yr < IYMIN) return -1; 
+    if (mo < 1 || mo > 12) return -2; 
+    
+    if ((mo === 2) && (yr % 4 === 0) && ((yr % 100 !== 0) || (yr % 400 === 0))) { ly = 1; }
+    if ( (dy < 1) || (dy > (mtab[mo-1] + ly))) { j = -3; }
+     my = (mo - 14) / 12;
+     ypmy = yr + my;
+     djm = ((1461.0 * (ypmy + 4800.0)) / 4 + (367 * (mo - 2 - 12 * my)) / 12 - (3 * ((ypmy + 4900.0) / 100)) / 4 + dy - 2432076);
+
+     return djm + djm0 + frac;
+  };
 
 
 
