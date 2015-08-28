@@ -7,7 +7,8 @@ var shell = require('shelljs/make'),
     copy = "// Copyright 2015 Olaf Frohn https://github.com/ofrohn, see LICENSE\n",
     begin = "!(function() {",
     end = "this.Orrery = Orrery;\n})();",
-    filename = './orrery';
+    filename = './orrery',
+    imgpath = "../../blog/res/planets/";
 
     
 target.all = function() {
@@ -30,7 +31,7 @@ target.test = function() {
   cd('..');
 
   //run tests
-  cd('test');
+/*  cd('test');
   ls("*-test.js").forEach(function(file) {
     if (exec('node ' + file).code !== 123) {
       echo('TEST FAILED for ' + file);
@@ -40,21 +41,31 @@ target.test = function() {
 
   echo('Unit tests passed');
 
-  cd('..');
+  cd('..');*/
 };
 
 target.build = function() {
 
-  vm.runInThisContext(fs.readFileSync('./src/orrery.js', 'utf-8'), './src/orrery.js');
+  /*vm.runInThisContext(fs.readFileSync('./src/orrery.js', 'utf-8'), './src/orrery.js');
   echo('V' + Orrery.version);
-  
+  */
+  echo('Copying files');
+
+  var data = JSON.parse(cat('./data/planets.json'));
+
+  for (key in data) {
+    if (data[key].hasOwnProperty('icon'))
+      cp('-f', imgpath + data[key].icon, 'img');
+  }
+  cp('-f', imgpath + 'sun.png', 'img');
+
   var file = cat([
-    './src/orrery.js', 
     './src/matrix.js', 
+    './src/util.js',
     './src/transform.js', 
     './src/get.js',
     './src/config.js', 
-    './src/util.js'
+    './src/orrery.js'
   ]);
   file = copy + begin + file.replace(/\/\* global.*/g, '') + end;
   file.to(filename + '.js');
@@ -79,7 +90,7 @@ target.build = function() {
 
   // zip data + prod. code + css
   tar.pack('./', {
-       entries: ['viewer.html', 'style.css', 'readme.md', 'LICENSE', 'orrery.min.js', 'data', 'lib/d3.min.js'] 
+       entries: ['viewer.html', 'style.css', 'readme.md', 'LICENSE', 'orrery.min.js', 'data', 'img', 'lib/d3.min.js'] 
      })
      .pipe(zlib.createGzip())
      .pipe(fs.createWriteStream(filename + '.tar.gz'))

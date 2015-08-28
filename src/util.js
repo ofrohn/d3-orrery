@@ -47,7 +47,7 @@ function dtAdd(dt, val, type) {
     case 'ms': ldt += val; break;
   }
   return new Date(ldt);
-};
+}
 
 
 function dtDiff(dt1, dt2, type) {
@@ -66,11 +66,11 @@ function dtDiff(dt1, dt2, type) {
   }
   return ldt;
   //return Math.floor(ldt);
-};
+}
 
 function dtFrac(dt) {
   return (dt.getHours() + dt.getTimezoneOffset()/60.0 + dt.getMinutes()/60.0 + dt.getSeconds()/3600.0) / 24;
-};
+}
 
 
 var Trig = {

@@ -1,4 +1,4 @@
-/* global Trig, Parse */
+/* global Trig, dtParse, dtFrac, has */
 var transform = function(item, date, gmass) {
   var dt, i, key, gm, dat = {}, elms = ["a","e","i","w","M","L","W","N"],
 /*
@@ -236,8 +236,4 @@ function JD(dt) {
      djm = ((1461.0 * (ypmy + 4800.0)) / 4 + (367 * (mo - 2 - 12 * my)) / 12 - (3 * ((ypmy + 4900.0) / 100)) / 4 + dy - 2432076);
 
      return djm + djm0 + frac;
-  };
-
-
-
-
+  }

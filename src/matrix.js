@@ -34,11 +34,11 @@ var mMultiply = function(a, b) {
 var getRotation = function(angle) {
   //Rotation by z- and x-axis
   return mMultiply(rMatrix("z", angle[2]), rMatrix("x", angle[0]));
-}
+};
 
 //Get x/y/z-rotation matrix
 var rMatrix = function(axis, θ) {
-   var r = θ * Math.PI / 180,
+   var r = -θ * Math.PI / 180,
        c = Math.cos(r), s = Math.sin(r);
       
    switch (axis) {
