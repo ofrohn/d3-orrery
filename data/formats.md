@@ -1,6 +1,9 @@
+Data file with orbital elements 
+```js
  {
  "Id": {               // Unique identifier
   "name": "<string>",  // (opt) Object name
+  "desig": "<string>", // (opt) Object designator
   "icon": "<string>",  // (opt) Image representation 
   "H": <number>,  // Absolute magnitude (mag)
   "elements": [
@@ -28,3 +31,4 @@
  }, 
  {} ...
  }
+```
