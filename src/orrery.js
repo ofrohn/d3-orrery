@@ -5,35 +5,31 @@ var Orrery = {
 };
 
 
-//http://ssd.jpl.nasa.gov/?planet_pos
 var planets = [], sbos = [], tracks = [], tdata,
     dt = new Date(),
     angle = [30,0,90],
     scale = 60,  par = null, 
     sun, planet, track, sbo;
 
+// Can be in box element par, otherwise full screen
 var width = par ? par.clientWidth : window.innerWidth,
     height = par ? par.clientHeight : window.innerHeight;
 
 //var trans = transform(dt);
-    
+
+//Rotation matrix
 var rmatrix = getRotation(angle);
 
+//Scales for rotation with dragging
 var x = d3.scale.linear().domain([-width/2, width/2]).range([-360, 360]);
 var z = d3.scale.linear().domain([-height/2, height/2]).range([90, -90]).clamp(true);
 
-var zoom = d3.behavior.zoom()    
-             .center([0, 0])
-             //.x(x).y(y)
-             .scaleExtent([10, 150])
-             .scale(scale)
-             //.size([width, height])
-             .on("zoom", redraw);
+var zoom = d3.behavior.zoom().center([0, 0]).scaleExtent([10, 150]).scale(scale).on("zoom", redraw);
 
 var svg = d3.select("body").append("svg").attr("width", width).attr("height", height).call(zoom);
-            
+
+//Coordinate origin [0,0] at Sun position
 var helio = svg.append("g").attr("transform", "translate(" + width/2 + "," + height/2 + ")");
-                //scale(scale)
 
 var rsun = Math.pow(scale, 0.8);
 sun = helio.append("image")
