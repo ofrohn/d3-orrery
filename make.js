@@ -8,7 +8,8 @@ var shell = require('shelljs/make'),
     begin = "!(function() {",
     end = "this.Orrery = Orrery;\n})();",
     filename = './orrery',
-    imgpath = "../../blog/res/planets/";
+    planetpath = "../../blog/res/planets/",
+    probepath = "../../blog/res/probes/";
 
     
 target.all = function() {
@@ -55,9 +56,24 @@ target.build = function() {
 
   for (key in data) {
     if (data[key].hasOwnProperty('icon'))
-      cp('-f', imgpath + data[key].icon, 'img');
+      cp('-f', planetpath + data[key].icon, 'img');
   }
-  cp('-f', imgpath + 'sun.png', 'img');
+  cp('-f', planetpath + 'sun.png', 'img');
+
+  var data = JSON.parse(cat('./data/sbo.json'));
+
+  for (key in data) {
+    if (data[key].hasOwnProperty('icon'))
+      cp('-f', planetpath + data[key].icon, 'img');
+  }
+  
+  
+  var data = JSON.parse(cat('./data/probes.json'));
+
+  for (key in data) {
+    if (data[key].hasOwnProperty('icon'))
+      cp('-f', probepath + data[key].icon, 'img');
+  }
 
   var file = cat([
     './src/matrix.js', 

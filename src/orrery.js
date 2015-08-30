@@ -5,11 +5,11 @@ var Orrery = {
 };
 
 
-var planets = [], sbos = [], tracks = [], tdata,
+var planets = [], sbos = [], tracks = [], probes = [], tdata,
     dt = new Date(),
     angle = [30,0,90],
     scale = 60,  par = null, 
-    sun, planet, track, sbo;
+    sun, planet, track, probe, sbo;
 
 // Can be in box element par, otherwise full screen
 var width = par ? par.clientWidth : window.innerWidth,
@@ -99,6 +99,28 @@ d3.json('data/sbo.json', function(error, json) {
 
 });
 
+d3.json('data/probes.json', function(error, json) {
+  if (error) return console.log(error);
+  
+  for (var key in json) {
+    if (!has(json, key)) continue;
+    //object: pos[x,y,z],name,r,icon
+    var pr = getObject(json[key]);
+    if (pr) probes.push(pr);
+  }
+
+  probe = helio.selectAll(".probes")
+    .data(probes)
+    .enter().append("image")
+    .attr("xlink:href", function(d) { return "../../blog/res/probes/" + d.icon; } )
+    .attr("transform", translate)
+    .attr("class", "planet")
+    .attr("width", 20 )
+    .attr("height", 20 );
+    //.attr("d", d3.svg.symbol().size( function(d) { return Math.pow(d.r-8, 2); } ));
+
+
+});
 
 function translate_tracks(tracks) {
   var res = [];
