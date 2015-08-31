@@ -51,8 +51,9 @@ d3.json('data/planets.json', function(error, json) {
     if (!has(json, key)) continue;
     //object: pos[x,y,z],name,r,icon
     planets.push(getObject(json[key]));
-    //track: [x,y,z]    
-    tracks.push(getOrbit(json[key]));
+    //track: [x,y,z]
+    if (has(json[key], "trajectory") && json[key].trajectory === true)
+      tracks.push(getOrbit(json[key]));
   }
   //console.log(planets);
   
@@ -122,6 +123,22 @@ d3.json('data/probes.json', function(error, json) {
 
 });
 
+  d3.select(window).on('resize', resize);
+
+  function resize() {
+    //if (cfg.width && cfg.width > 0) return;
+    width = par ? par.clientWidth : window.innerWidth;
+    height = par ? par.clientHeight : window.innerHeight;
+    //var scale = proj.scale * width/1024;
+    svg.attr("width", width).attr("height", height);
+    helio.attr("transform", "translate(" + width/2 + "," + height/2 + ")");
+    //zoom.scale([scale]);
+    //projection.translate([width/2, height/2]).scale([scale]);
+    //if (parent) parent.style.height = px(height);
+    redraw();
+  }
+
+
 function translate_tracks(tracks) {
   var res = [];
   
@@ -162,7 +179,7 @@ function redraw() {
   //console.log(x(trans[0]) + ", " + y(trans[1]));
 
   rsun = Math.pow(scale, 0.8);
-  sun.attr({"xlink:href": "../../blog/res/planets/sun.png", "x": -rsun/2, "y": -rsun/2, "width": rsun,
+  sun.attr({"x": -rsun/2, "y": -rsun/2, "width": rsun,
           "height": rsun});
   
   planet.attr("transform", translate);
