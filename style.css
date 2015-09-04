@@ -1,5 +1,5 @@
 /* Copyright 2015 Olaf Frohn https://github.com/ofrohn, see LICENSE */
-body { margin:0; padding:0; background: #000; }
+body { margin:0; padding:0; background: #000; overflow: hidden }
 
 .sun { stroke : #ff0; fill : #ff0; }
 .planet { fill: #fff; stroke: #fff; }

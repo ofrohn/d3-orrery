@@ -1,5 +1,5 @@
 /* global transform, dt, dtAdd, dtDiff,  */
-var getObject = function(d) {
+var getObject = function(dt, d) {
   if (d.elements.length > 1) {
     //find trajectory for date 
     return;
@@ -15,7 +15,7 @@ var getObject = function(d) {
 };
 
 
-var getOrbit = function(d) {  
+var getOrbit = function(dt, d) {  
   var e = d.elements[0], res = [],
       p, p0 = transform(e, dt);
   
