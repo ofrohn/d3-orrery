@@ -9,11 +9,24 @@ Orrery.display = function(config) {
       dt = new Date(),
       angle = [30,0,90],
       scale = 60,  par = null, 
-      sun, planet, track, probe, sbo;
+      par, sun, planet, track, probe, sbo;
+
+  var cfg = settings.set(config); 
+
+  var parent = $(cfg.container);
+  if (parent) { 
+    par = "#"+cfg.container;
+    var stl = window.getComputedStyle(parent, null);
+    if (!parseInt(stl.width) && !cfg.width) parent.style.width = px(window.innerWidth);    
+    if (!parseInt(stl.height) && !cfg.height) parent.style.height = px(window.innerHeight);    
+  } else { 
+    par = "body"; 
+    parent = null; 
+  }
 
   // Can be in box element par, otherwise full screen
-  var width = par ? par.clientWidth : window.innerWidth,
-      height = par ? par.clientHeight : window.innerHeight;
+  var width = parent ? parent.clientWidth : window.innerWidth,
+      height = parent ? parent.clientHeight : window.innerHeight;
 
   //var trans = transform(dt);
 
@@ -26,7 +39,7 @@ Orrery.display = function(config) {
 
   var zoom = d3.behavior.zoom().center([0, 0]).scaleExtent([10, 150]).scale(scale).on("zoom", redraw);
 
-  var svg = d3.select("body").append("svg").attr("width", width).attr("height", height).call(zoom);
+  var svg = d3.select(par).append("svg").attr("width", width).attr("height", height).call(zoom);
 
   //Coordinate origin [0,0] at Sun position
   var helio = svg.append("g").attr("transform", "translate(" + width/2 + "," + height/2 + ")");
@@ -123,9 +136,9 @@ Orrery.display = function(config) {
 
 
   function resize() {
-    //if (cfg.width && cfg.width > 0) return;
-    width = par ? par.clientWidth : window.innerWidth;
-    height = par ? par.clientHeight : window.innerHeight;
+    if (cfg.width && cfg.width > 0) return;
+    width = parent ? parent.clientWidth : window.innerWidth;
+    height = parent ? parent.clientHeight : window.innerHeight;
     svg.attr("width", width).attr("height", height);
     helio.attr("transform", "translate(" + width/2 + "," + height/2 + ")");
 
