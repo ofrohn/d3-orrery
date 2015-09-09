@@ -1,4 +1,4 @@
-/* global getRotation, getObject, getOrbit, vMultiply, has */
+/* global getRotation, getObject, getOrbit, vMultiply, has, settings, $, px */
 var Orrery = {
   version: '0.2',
   svg: null
@@ -9,7 +9,7 @@ Orrery.display = function(config) {
       dt = new Date(),
       angle = [30,0,90],
       scale = 60,  par = null, 
-      par, sun, planet, track, probe, sbo;
+      sun, planet, track, probe, sbo;
 
   var cfg = settings.set(config); 
 
@@ -57,81 +57,105 @@ Orrery.display = function(config) {
        .y( function(d) { return d[1]; } );
 
   //Diplay planets with image and orbital track
-  d3.json('data/planets.json', function(error, json) {
-    if (error) return console.log(error);
-    
-    for (var key in json) {
-      if (!has(json, key)) continue;
-      //object: pos[x,y,z],name,r,icon
-      planets.push(getObject(dt, json[key]));
-      //track: [x,y,z]
-      if (has(json[key], "trajectory") && json[key].trajectory === true)
-        tracks.push(getOrbit(dt, json[key]));
-    }
-    
-    tdata = translate_tracks(tracks);
+  if (cfg.planets.show) { 
+    d3.json('data/planets.json', function(error, json) {
+      if (error) return console.log(error);
+      
+      for (var key in json) {
+        if (!has(json, key)) continue;
+        //object: pos[x,y,z],name,r,icon
+        planets.push(getObject(dt, json[key]));
+        //track: [x,y,z]
+        if (cfg.planets.trajectory && has(json[key], "trajectory"))
+          tracks.push(getOrbit(dt, json[key]));
+      }
+      
+      if (cfg.planets.trajectory) {
+        tdata = translate_tracks(tracks);
 
-    track = helio.selectAll(".tracks")
-      .data(tdata)
-      .enter().append("path")
-      .attr("class", "dot")            
-      .attr("d", line); 
-
-    
-    planet = helio.selectAll(".planets")
-      .data(planets)
-      .enter().append("image")
-      .attr("xlink:href", function(d) { return "img/" + d.icon; } )
-      .attr("transform", translate)
-      .attr("class", "planet")
-      .attr("width", function(d) { return d.name == "Saturn" ? d.r*2.7 : d.r; } )
-      .attr("height", function(d) { return d.r; } );
-
-  });
-
+        track = helio.selectAll(".tracks")
+          .data(tdata)
+          .enter().append("path")
+          .attr("class", "dot")            
+          .attr("d", line); 
+      } 
+      
+      if (cfg.planets.image) {
+        planet = helio.selectAll(".planets")
+          .data(planets)
+          .enter().append("image")
+          .attr("xlink:href", function(d) { return "img/" + d.icon; } )
+          .attr("transform", translate)
+          .attr("class", "planet")
+          .attr("width", function(d) { return d.name == "Saturn" ? d.r*2.7 : d.r; } )
+          .attr("height", function(d) { return d.r; } );
+      }
+    });
+     
+  }
+  
   //Display Small bodies as dots
-  d3.json('data/sbo.json', function(error, json) {
-    if (error) return console.log(error);
-    
-    for (var key in json) {
-      if (!has(json, key)) continue;
-      //sbos: pos[x,y,z],name,r
-      if (json[key].H < 11)
-        sbos.push(getObject(dt, json[key]));
-    }
-    //console.log(objects);
-    
-    sbo = helio.selectAll(".sbos")
-      .data(sbos)
-      .enter().append("path")
-      .attr("transform", translate)
-      .attr("class", "sbo")
-      .attr("d", d3.svg.symbol().size( function(d) { return d.r; } ));
+  if (cfg.sbos.show) { 
+    d3.json('data/sbo.json', function(error, json) {
+      if (error) return console.log(error);
+      
+      for (var key in json) {
+        if (!has(json, key)) continue;
+        //sbos: pos[x,y,z],name,r
+        if (json[key].H < 11)
+          sbos.push(getObject(dt, json[key]));
+      }
+      //console.log(objects);
+      
+      sbo = helio.selectAll(".sbos")
+        .data(sbos)
+        .enter().append("path")
+        .attr("transform", translate)
+        .attr("class", "sbo")
+        .attr("d", d3.svg.symbol().size( function(d) { return d.r; } ));
 
-  });
-
+    });
+  }
+  
   //Display spacecraft with images (opt. text/trajectory)
-  d3.json('data/probes.json', function(error, json) {
-    if (error) return console.log(error);
+  if (cfg.spacecraft.show) { 
+    d3.json('data/probes.json', function(error, json) {
+      if (error) return console.log(error);
+      
+      for (var key in json) {
+        if (!has(json, key)) continue;
+        //object: pos[x,y,z],name,r,icon
+        var pr = getObject(dt, json[key]);
+        if (pr) probes.push(pr);
+      }
     
-    for (var key in json) {
-      if (!has(json, key)) continue;
-      //object: pos[x,y,z],name,r,icon
-      var pr = getObject(dt, json[key]);
-      if (pr) probes.push(pr);
-    }
+      //trajectory
+      /*if (cfg.spacecraft.trajectory) { 
 
-    probe = helio.selectAll(".probes")
-      .data(probes)
-      .enter().append("image")
-      .attr("xlink:href", function(d) { return "../../blog/res/probes/" + d.icon; } )
-      .attr("transform", translate)
-      .attr("class", "planet")
-      .attr("width", 20 )
-      .attr("height", 20 );
-
-  });
-
+      } */     
+      
+      //image or dot
+      if (cfg.spacecraft.image) { 
+        probe = helio.selectAll(".probes")
+          .data(probes)
+          .enter().append("image")
+          .attr("xlink:href", function(d) { return "img/" + d.icon; } )
+          .attr("transform", translate)
+          .attr("class", "planet")
+          .attr("width", 20 )
+          .attr("height", 20 );
+      } else {
+        sbo = helio.selectAll(".probes")
+          .data(probes)
+          .enter().append("path")
+          .attr("transform", translate)
+          .attr("class", "planet")
+          .attr("d", d3.svg.symbol().size( function(d) { return d.r; } ));        
+      }
+    });
+    
+  }
+  
   d3.select(window).on('resize', resize);
 
 

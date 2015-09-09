@@ -1,4 +1,4 @@
-// global has
+/* global has */
 //Default configuration
 var settings = {
   width: 0,            // Default width

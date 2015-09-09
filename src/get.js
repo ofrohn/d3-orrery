@@ -7,7 +7,12 @@ var getObject = function(dt, d) {
   var e = d.elements[0];
   var pos = transform(e, dt);
   
-  var res = {name: d.name, pos: [pos.x, pos.y, pos.z], r: 12 - d.H };
+  var res = {name: d.name, pos: [pos.x, pos.y, pos.z]};
+  // size
+  if (d.H && d.H !== "") res.r = 12 -d.H;
+  else if (d.r && d.r !== "") res.r = d.r;
+  else res.r = 20;
+  
   //icon
   if (d.icon && d.icon !== "") res.icon = d.icon;
   
