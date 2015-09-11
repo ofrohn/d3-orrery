@@ -3,9 +3,9 @@
 var settings = {
   width: 0,            // Default width
   height: 0,           // Default height
-  background: "#000000", // Background color or gradient  
   container: "map",    // ID of parent element, e.g. div
   datapath: "data/",   // Path/URL to data files, empty = subfolder 'data'
+  imagepath: "img/",   // Path/URL to image files, empty = subfolder 'img'
   planets: {          
     show: true,        // Show planets, data in planets.json
     image: true,       // With image representation, if dataset contains icon parameter

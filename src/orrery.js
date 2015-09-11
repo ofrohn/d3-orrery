@@ -9,7 +9,7 @@ Orrery.display = function(config) {
       dt = new Date(),
       angle = [30,0,90],
       scale = 60,  par = null, 
-      sun, planet, track, probe, sbo;
+      sun, pl, tr, sc, sb;
 
   var cfg = settings.set(config); 
 
@@ -37,7 +37,7 @@ Orrery.display = function(config) {
   var x = d3.scale.linear().domain([-width/2, width/2]).range([-360, 360]);
   var z = d3.scale.linear().domain([-height/2, height/2]).range([90, -90]).clamp(true);
 
-  var zoom = d3.behavior.zoom().center([0, 0]).scaleExtent([10, 150]).scale(scale).on("zoom", redraw);
+  var zoom = d3.behavior.zoom().center([0, 0]).scaleExtent([1, 150]).scale(scale).on("zoom", redraw);
 
   var svg = d3.select(par).append("svg").attr("width", width).attr("height", height).call(zoom);
 
@@ -73,22 +73,26 @@ Orrery.display = function(config) {
       if (cfg.planets.trajectory) {
         tdata = translate_tracks(tracks);
 
-        track = helio.selectAll(".tracks")
-          .data(tdata)
+        tr = helio.selectAll(".tracks").data(tdata)
           .enter().append("path")
           .attr("class", "dot")            
           .attr("d", line); 
       } 
       
+      pl = helio.selectAll(".planets").data(planets);
+      
       if (cfg.planets.image) {
-        planet = helio.selectAll(".planets")
-          .data(planets)
-          .enter().append("image")
+        pl.enter().append("image")
           .attr("xlink:href", function(d) { return "img/" + d.icon; } )
           .attr("transform", translate)
           .attr("class", "planet")
           .attr("width", function(d) { return d.name == "Saturn" ? d.r*2.7 : d.r; } )
           .attr("height", function(d) { return d.r; } );
+      } else {
+        pl.enter().append("path")
+          .attr("transform", translate)
+          .attr("class", "planet")
+          .attr("d", d3.svg.symbol().size( function(d) { return d.r; } ));        
       }
     });
      
@@ -107,8 +111,7 @@ Orrery.display = function(config) {
       }
       //console.log(objects);
       
-      sbo = helio.selectAll(".sbos")
-        .data(sbos)
+      sb = helio.selectAll(".sbos").data(sbos)
         .enter().append("path")
         .attr("transform", translate)
         .attr("class", "sbo")
@@ -135,21 +138,19 @@ Orrery.display = function(config) {
       } */     
       
       //image or dot
+      sc = helio.selectAll(".probes").data(probes);
+        
       if (cfg.spacecraft.image) { 
-        probe = helio.selectAll(".probes")
-          .data(probes)
-          .enter().append("image")
+        sc.enter().append("image")
           .attr("xlink:href", function(d) { return "img/" + d.icon; } )
           .attr("transform", translate)
-          .attr("class", "planet")
-          .attr("width", 20 )
-          .attr("height", 20 );
+          .attr("class", "sc")
+          .attr("width", function(d) { return d.r; }  )
+          .attr("height", function(d) { return d.r; }  );
       } else {
-        sbo = helio.selectAll(".probes")
-          .data(probes)
-          .enter().append("path")
+        sc.enter().append("path")
           .attr("transform", translate)
-          .attr("class", "planet")
+          .attr("class", "sc")
           .attr("d", d3.svg.symbol().size( function(d) { return d.r; } ));        
       }
     });
@@ -213,11 +214,12 @@ Orrery.display = function(config) {
     rsun = Math.pow(scale, 0.8);
     sun.attr({"x": -rsun/2, "y": -rsun/2, "width": rsun, "height": rsun});
     
-    planet.attr("transform", translate);
+    pl.attr("transform", translate);
 
     tdata = translate_tracks(tracks);
-
-    track.data(tdata).attr("d", line);
-    sbo.attr("transform", translate);
+    tr.data(tdata).attr("d", line);
+    
+    sb.attr("transform", translate);
+    sc.attr("transform", translate);
   }
 };
