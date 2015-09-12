@@ -3,6 +3,6 @@ body { margin:0; padding:0; overflow: hidden }
 #map { width:100%; height:100%; background: #000;  }
 
 .sun { stroke : #ff0; fill : #ff0; }
-.planet { fill: #fff; stroke: #fff; }
+.planet, .sc { fill: #fff; stroke: #fff; }
 .sbo { fill: #fff; stroke: transparent; }
 .dot { stroke: #fff; stroke-width: 0.5;  stroke-dasharray: 2,3; fill:transparent; }

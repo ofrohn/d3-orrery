@@ -5,21 +5,21 @@ var transform = function(item, date, gmass) {
   var dt, i, key, dat = {}, elms = ["a","e","i","w","M","L","W","N","n"];
 /*
     ep = epoch (dt)
-    N = longitude of the ascending node (deg)
-    i = inclination to the ecliptic (plane of the Earth's orbit) (deg)
-    w = argument of perihelion (deg)
+    N = longitude of the ascending node (deg) Ω
+    i = inclination to the ecliptic (plane of the Earth's orbit) (deg) 
+    w = argument of perihelion (deg)  ω
     a = semi-major axis, or mean distance from Sun (AU,km)
     e = eccentricity (0=circle, 0-1=ellipse, 1=parabola, >1=hyperbola ) (-)
     M = mean anomaly (0 at perihelion; increases uniformly with time) (deg)
     n = mean daily motion = 2pi/P
     
-    W = N + w  = longitude of perihelion
+    W = N + w  = longitude of perihelion ϖ
     L = M + W  = mean longitude
     q = a*(1-e) = perihelion distance
     Q = a*(1+e) = aphelion distance
     P = a ^ 1.5 = orbital period (years if a is in AU, astronomical units)
     T = Epoch_of_M - (M(deg)/360_deg) / P  = time of perihelion
-    v = true anomaly (angle between position and perihelion)
+    v = true anomaly (angle between position and perihelion) ν
     E = eccentric anomaly
     
     Mandatory: a, e, i, N, w|W, M|L, dM|n
@@ -62,8 +62,12 @@ var transform = function(item, date, gmass) {
   return dat;
 };
 
-//gm_sol = 0.0002959122082855911025
-//gm_earth = 2975247333163008
+//AU 149597870.7 km
+//gm_sol = 0.0002959122082855911025 (AU^3/d^2)
+//gm_earth = 8.8876925870231737638917894479187e-10 (AU^3/d^2)           
+//gm_earth = 2975536354019328 (km^3/d^2)  
+
+             
 
 function near_parabolic(E, e) {
   var anom2 = e > 1.0 ? E*E : -E*E,
