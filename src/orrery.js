@@ -4,12 +4,23 @@ var Orrery = {
   svg: null
 };
 
-Orrery.display = function(config) {
-  var planets = [], sbos = [], tracks = [], probes = [], tdata,
-      dt = new Date(),
-      angle = [30,0,90],
-      scale = 60,  par = null, 
-      sun, pl, tr, sc, sb;
+var z, x, rmatrix,
+    scale = 60, 
+    angle = [30, 0, 90],
+    sun, pl, tr, sc, sb,
+    planets = [], sbos = [], probes = [], tracks = [], tdata;
+
+var zoom = d3.behavior.zoom().center([0, 0]).scaleExtent([1, 150]).scale(scale).on("zoom", redraw);
+var line = d3.svg.line().x( function(d) { return d[0]; } ).y( function(d) { return d[1]; } );
+
+var update = function(dt) {
+  var key;
+  
+}
+
+var display = function(config) {
+  var dt = new Date(),
+      par = null; 
 
   var cfg = settings.set(config); 
 
@@ -31,13 +42,11 @@ Orrery.display = function(config) {
   //var trans = transform(dt);
 
   //Rotation matrix
-  var rmatrix = getRotation(angle);
+  rmatrix = getRotation(angle);
 
   //Scales for rotation with dragging
-  var x = d3.scale.linear().domain([-width/2, width/2]).range([-360, 360]);
-  var z = d3.scale.linear().domain([-height/2, height/2]).range([90, -90]).clamp(true);
-
-  var zoom = d3.behavior.zoom().center([0, 0]).scaleExtent([1, 150]).scale(scale).on("zoom", redraw);
+  x = d3.scale.linear().domain([-width/2, width/2]).range([-360, 360]);
+  z = d3.scale.linear().domain([-height/2, height/2]).range([90, -90]).clamp(true);
 
   var svg = d3.select(par).append("svg").attr("width", width).attr("height", height).call(zoom);
 
@@ -52,18 +61,15 @@ Orrery.display = function(config) {
             "width": rsun,
             "height": rsun});
 
-  var line = d3.svg.line()
-       .x( function(d) { return d[0]; } )
-       .y( function(d) { return d[1]; } );
 
   //Diplay planets with image and orbital track
   if (cfg.planets.show) { 
     d3.json('data/planets.json', function(error, json) {
       if (error) return console.log(error);
-      
+            
       for (var key in json) {
         if (!has(json, key)) continue;
-        //object: pos[x,y,z],name,r,icon
+        //object: pos[x,y,z],name,r,icon,elements
         planets.push(getObject(dt, json[key]));
         //track: [x,y,z]
         if (cfg.planets.trajectory && has(json[key], "trajectory"))
@@ -158,7 +164,7 @@ Orrery.display = function(config) {
   }
   
   d3.select(window).on('resize', resize);
-
+}
 
   function resize() {
     if (cfg.width && cfg.width > 0) return;
@@ -222,4 +228,5 @@ Orrery.display = function(config) {
     sb.attr("transform", translate);
     sc.attr("transform", translate);
   }
-};
+
+Orrery.display = display;

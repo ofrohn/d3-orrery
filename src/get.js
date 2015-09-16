@@ -1,10 +1,19 @@
 /* global transform, dt, dtAdd, dtDiff,  */
 var getObject = function(dt, d) {
+  var index = 0;
+  
   if (d.elements.length > 1) {
     //find trajectory for date 
-    return;
+    for (var i=0; i<d.elements.length; i++) {
+      if (dtDiff(new Date(Date.parse(d.elements[i].ep)), dt) <= 0) {
+        index = i===0 ? 0 : i-1;
+        break;
+      }
+    }
+    //has special data
+    if (has(d.elements[index], "d")) return;
   } 
-  var e = d.elements[0];
+  var e = d.elements[index];
   var pos = transform(e, dt);
   
   var res = {name: d.name, pos: [pos.x, pos.y, pos.z]};
