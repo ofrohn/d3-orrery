@@ -1,8 +1,8 @@
 /* global has */
 //Default configuration
 var settings = {
-  width: 0,            // Default width
-  height: 0,           // Default height
+  width: 0,            // Default width; 0 = full width of parent
+  height: 0,           // Default height; 0 = full height of parent
   container: "map",    // ID of parent element, e.g. div
   datapath: "data/",   // Path/URL to data files, empty = subfolder 'data'
   imagepath: "img/",   // Path/URL to image files, empty = subfolder 'img'
@@ -20,7 +20,7 @@ var settings = {
     size: null         // Constant size or function
   },
   spacecraft: {
-    show: true,        // Show spacecraft, data in probes.json
+    show: false,        // Show spacecraft, data in probes.json
     image: false,      // With image representation, if dataset contains 'icon' parameter
     text: true,        // Show sc name, if dataset contains 'designator' parameter
     trajectory: false, // Show trajectory path as line 
