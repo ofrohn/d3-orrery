@@ -1,4 +1,4 @@
-/* global getRotation, getObject, getOrbit, vMultiply, has, settings, $, px */
+/* global getRotation, getObject, updateObject, getOrbit, vMultiply, has, settings, $, px */
 var Orrery = {
   version: '0.2',
   svg: null
@@ -34,7 +34,7 @@ var update = function(dt) {
   }  
   
   redraw();
-}
+};
 
 var display = function(config, date) {
   var dt = date || new Date(),
@@ -182,7 +182,7 @@ var display = function(config, date) {
   }
   
   d3.select(window).on('resize', resize);
-}
+};
 
 function resize() {
   if (cfg.width && cfg.width > 0) return;
@@ -235,7 +235,7 @@ function redraw() {
   //console.log(d3.event.sourceEvent.type);
   //console.log(x(trans[0]) + ", " + y(trans[1]));
 
-  rsun = Math.pow(scale, 0.8);
+  var rsun = Math.pow(scale, 0.8);
   sun.attr({"x": -rsun/2, "y": -rsun/2, "width": rsun, "height": rsun});
   
   pl.attr("transform", translate);

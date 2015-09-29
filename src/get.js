@@ -1,4 +1,4 @@
-/* global transform, dt, dtAdd, dtDiff,  */
+/* global transform, dt, dtAdd, dtDiff, has  */
 
 var getObject = function(dt, d) {
   
@@ -48,7 +48,7 @@ var getEpoch = function(dt, e) {
     }
   }
   return index;  
-}
+};
 
 var getOrbit = function(dt, d) {  
   var e = d.elements[0], res = [],

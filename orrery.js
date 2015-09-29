@@ -145,21 +145,21 @@ var transform = function(item, date, gmass) {
   var dt, i, key, dat = {}, elms = ["a","e","i","w","M","L","W","N","n"];
 /*
     ep = epoch (dt)
-    N = longitude of the ascending node (deg)
-    i = inclination to the ecliptic (plane of the Earth's orbit) (deg)
-    w = argument of perihelion (deg)
+    N = longitude of the ascending node (deg) Ω
+    i = inclination to the ecliptic (plane of the Earth's orbit) (deg) 
+    w = argument of perihelion (deg)  ω
     a = semi-major axis, or mean distance from Sun (AU,km)
     e = eccentricity (0=circle, 0-1=ellipse, 1=parabola, >1=hyperbola ) (-)
     M = mean anomaly (0 at perihelion; increases uniformly with time) (deg)
     n = mean daily motion = 2pi/P
     
-    W = N + w  = longitude of perihelion
+    W = N + w  = longitude of perihelion ϖ
     L = M + W  = mean longitude
     q = a*(1-e) = perihelion distance
     Q = a*(1+e) = aphelion distance
     P = a ^ 1.5 = orbital period (years if a is in AU, astronomical units)
     T = Epoch_of_M - (M(deg)/360_deg) / P  = time of perihelion
-    v = true anomaly (angle between position and perihelion)
+    v = true anomaly (angle between position and perihelion) ν
     E = eccentric anomaly
     
     Mandatory: a, e, i, N, w|W, M|L, dM|n
@@ -202,8 +202,12 @@ var transform = function(item, date, gmass) {
   return dat;
 };
 
-//gm_sol = 0.0002959122082855911025
-//gm_earth = 2975247333163008
+//AU 149597870.7 km
+//gm_sol = 0.0002959122082855911025 (AU^3/d^2)
+//gm_earth = 8.8876925870231737638917894479187e-10 (AU^3/d^2)           
+//gm_earth = 2975536354019328 (km^3/d^2)  
+
+             
 
 function near_parabolic(E, e) {
   var anom2 = e > 1.0 ? E*E : -E*E,
@@ -386,15 +390,18 @@ function JD(dt) {
   }
 
 
+
 var getObject = function(dt, d) {
-  if (d.elements.length > 1) {
-    //find trajectory for date 
-    return;
-  } 
-  var e = d.elements[0];
+  
+  var index = getEpoch(dt, d.elements);
+  
+  //has special data, todo: find appropriate data
+  if (has(d.elements[index], "d")) return;
+
+  var e = d.elements[index];
   var pos = transform(e, dt);
   
-  var res = {name: d.name, pos: [pos.x, pos.y, pos.z]};
+  var res = {name: d.name, pos: [pos.x, pos.y, pos.z], elements: d.elements};
   // size
   if (d.H && d.H !== "") res.r = 12 -d.H;
   else if (d.r && d.r !== "") res.r = d.r;
@@ -406,6 +413,33 @@ var getObject = function(dt, d) {
   return res;
 };
 
+var updateObject = function(dt, e) {
+  var index = getEpoch(dt, e);
+  
+  //has special data, todo: find appropriate data
+  if (has(e[index], "d")) return;
+
+  //var e = d.elements[index];
+  var pos = transform(e[index], dt);
+
+  return [pos.x, pos.y, pos.z];
+};
+
+//Find valid set of elements for date
+var getEpoch = function(dt, e) {
+  var index = 0;
+  
+  if (e.length > 1) {
+    //find trajectory for date 
+    for (var i=0; i<e.length; i++) {
+      if (dtDiff(new Date(Date.parse(e[i].ep)), dt) <= 0) {
+        index = i===0 ? 0 : i-1;
+        break;
+      }
+    }
+  }
+  return index;  
+};
 
 var getOrbit = function(dt, d) {  
   var e = d.elements[0], res = [],
@@ -413,7 +447,7 @@ var getOrbit = function(dt, d) {
   
   var period = p0.P,
       end = dtAdd(dt, period, "y"),
-      step = dtDiff(dt, end)/90/(p0.a),
+      step = dtDiff(dt, end)/45/(p0.a),
       current = new Date(dt.valueOf());
   
   while (dtDiff(current, end) > 0) {
@@ -429,11 +463,11 @@ var getOrbit = function(dt, d) {
 
 //Default configuration
 var settings = {
-  width: 0,            // Default width
-  height: 0,           // Default height
-  background: "#000000", // Background color or gradient  
+  width: 0,            // Default width; 0 = full width of parent
+  height: 0,           // Default height; 0 = full height of parent
   container: "map",    // ID of parent element, e.g. div
   datapath: "data/",   // Path/URL to data files, empty = subfolder 'data'
+  imagepath: "img/",   // Path/URL to image files, empty = subfolder 'img'
   planets: {          
     show: true,        // Show planets, data in planets.json
     image: true,       // With image representation, if dataset contains icon parameter
@@ -448,7 +482,7 @@ var settings = {
     size: null         // Constant size or function
   },
   spacecraft: {
-    show: true,        // Show spacecraft, data in probes.json
+    show: false,        // Show spacecraft, data in probes.json
     image: false,      // With image representation, if dataset contains 'icon' parameter
     text: true,        // Show sc name, if dataset contains 'designator' parameter
     trajectory: false, // Show trajectory path as line 
@@ -494,45 +528,72 @@ var Orrery = {
   svg: null
 };
 
-Orrery.display = function(config) {
-  var planets = [], sbos = [], tracks = [], probes = [], tdata,
-      dt = new Date(),
-      angle = [30,0,90],
-      scale = 60,  par = null, 
-      sun, planet, track, probe, sbo;
+var svg, helio, z, x, rmatrix,
+    parNode,
+    scale = 60, 
+    angle = [30, 0, 90],
+    width, height, cfg,
+    sun, pl, tr, sc, sb,
+    planets = [], sbos = [], probes = [], tracks = [], tdata;
 
-  var cfg = settings.set(config); 
+var zoom = d3.behavior.zoom().center([0, 0]).scaleExtent([1, 150]).scale(scale).on("zoom", redraw);
+var line = d3.svg.line().x( function(d) { return d[0]; } ).y( function(d) { return d[1]; } );
 
-  var parent = $(cfg.container);
-  if (parent) { 
-    par = "#"+cfg.container;
-    var stl = window.getComputedStyle(parent, null);
-    if (!parseInt(stl.width) && !cfg.width) parent.style.width = px(window.innerWidth);    
-    if (!parseInt(stl.height) && !cfg.height) parent.style.height = px(window.innerHeight);    
+var update = function(dt) {
+  var i, pos;
+  
+  for (i=0; i<planets.length; i++) {
+    pos = updateObject(dt, planets[i].elements);
+    if (pos) planets[i].pos = pos;
+  }  
+
+  for (i=0; i<sbos.length; i++) {
+    pos = updateObject(dt, sbos[i].elements);
+    if (pos) sbos[i].pos = pos;
+  }  
+
+  for (i=0; i<probes.length; i++) {
+    pos = updateObject(dt, probes[i].elements);
+    if (pos) probes[i].pos = pos;
+  }  
+  
+  redraw();
+};
+
+var display = function(config, date) {
+  var dt = date || new Date(),
+      parID = null; 
+
+  cfg = settings.set(config); 
+
+  parNode = $(cfg.container);
+  if (parNode) { 
+    parID = "#"+cfg.container;
+    var stl = window.getComputedStyle(parNode, null);
+    if (!parseInt(stl.width) && !cfg.width) parNode.style.width = px(window.innerWidth);    
+    if (!parseInt(stl.height) && !cfg.height) parNode.style.height = px(window.innerHeight);    
   } else { 
-    par = "body"; 
-    parent = null; 
+    parID = "body"; 
+    parNode = null; 
   }
 
   // Can be in box element par, otherwise full screen
-  var width = parent ? parent.clientWidth : window.innerWidth,
-      height = parent ? parent.clientHeight : window.innerHeight;
+  width = parNode ? parNode.clientWidth : window.innerWidth;
+  height = parNode ? parNode.clientHeight : window.innerHeight;
 
   //var trans = transform(dt);
 
   //Rotation matrix
-  var rmatrix = getRotation(angle);
+  rmatrix = getRotation(angle);
 
   //Scales for rotation with dragging
-  var x = d3.scale.linear().domain([-width/2, width/2]).range([-360, 360]);
-  var z = d3.scale.linear().domain([-height/2, height/2]).range([90, -90]).clamp(true);
+  x = d3.scale.linear().domain([-width/2, width/2]).range([-360, 360]);
+  z = d3.scale.linear().domain([-height/2, height/2]).range([90, -90]).clamp(true);
 
-  var zoom = d3.behavior.zoom().center([0, 0]).scaleExtent([10, 150]).scale(scale).on("zoom", redraw);
-
-  var svg = d3.select(par).append("svg").attr("width", width).attr("height", height).call(zoom);
+  svg = d3.select(parID).append("svg").attr("width", width).attr("height", height).call(zoom);
 
   //Coordinate origin [0,0] at Sun position
-  var helio = svg.append("g").attr("transform", "translate(" + width/2 + "," + height/2 + ")");
+  helio = svg.append("g").attr("transform", "translate(" + width/2 + "," + height/2 + ")");
 
   var rsun = Math.pow(scale, 0.8);
   sun = helio.append("image")
@@ -542,18 +603,15 @@ Orrery.display = function(config) {
             "width": rsun,
             "height": rsun});
 
-  var line = d3.svg.line()
-       .x( function(d) { return d[0]; } )
-       .y( function(d) { return d[1]; } );
 
   //Diplay planets with image and orbital track
   if (cfg.planets.show) { 
     d3.json('data/planets.json', function(error, json) {
       if (error) return console.log(error);
-      
+            
       for (var key in json) {
         if (!has(json, key)) continue;
-        //object: pos[x,y,z],name,r,icon
+        //object: pos[x,y,z],name,r,icon,elements
         planets.push(getObject(dt, json[key]));
         //track: [x,y,z]
         if (cfg.planets.trajectory && has(json[key], "trajectory"))
@@ -563,22 +621,26 @@ Orrery.display = function(config) {
       if (cfg.planets.trajectory) {
         tdata = translate_tracks(tracks);
 
-        track = helio.selectAll(".tracks")
-          .data(tdata)
+        tr = helio.selectAll(".tracks").data(tdata)
           .enter().append("path")
           .attr("class", "dot")            
           .attr("d", line); 
       } 
       
+      pl = helio.selectAll(".planets").data(planets);
+      
       if (cfg.planets.image) {
-        planet = helio.selectAll(".planets")
-          .data(planets)
-          .enter().append("image")
+        pl.enter().append("image")
           .attr("xlink:href", function(d) { return "img/" + d.icon; } )
           .attr("transform", translate)
           .attr("class", "planet")
           .attr("width", function(d) { return d.name == "Saturn" ? d.r*2.7 : d.r; } )
           .attr("height", function(d) { return d.r; } );
+      } else {
+        pl.enter().append("path")
+          .attr("transform", translate)
+          .attr("class", "planet")
+          .attr("d", d3.svg.symbol().size( function(d) { return d.r; } ));        
       }
     });
      
@@ -597,8 +659,7 @@ Orrery.display = function(config) {
       }
       //console.log(objects);
       
-      sbo = helio.selectAll(".sbos")
-        .data(sbos)
+      sb = helio.selectAll(".sbos").data(sbos)
         .enter().append("path")
         .attr("transform", translate)
         .attr("class", "sbo")
@@ -625,21 +686,19 @@ Orrery.display = function(config) {
       } */     
       
       //image or dot
+      sc = helio.selectAll(".probes").data(probes);
+        
       if (cfg.spacecraft.image) { 
-        probe = helio.selectAll(".probes")
-          .data(probes)
-          .enter().append("image")
+        sc.enter().append("image")
           .attr("xlink:href", function(d) { return "img/" + d.icon; } )
           .attr("transform", translate)
-          .attr("class", "planet")
-          .attr("width", 20 )
-          .attr("height", 20 );
+          .attr("class", "sc")
+          .attr("width", function(d) { return d.r; }  )
+          .attr("height", function(d) { return d.r; }  );
       } else {
-        sbo = helio.selectAll(".probes")
-          .data(probes)
-          .enter().append("path")
+        sc.enter().append("path")
           .attr("transform", translate)
-          .attr("class", "planet")
+          .attr("class", "sc")
           .attr("d", d3.svg.symbol().size( function(d) { return d.r; } ));        
       }
     });
@@ -647,68 +706,71 @@ Orrery.display = function(config) {
   }
   
   d3.select(window).on('resize', resize);
+};
 
+function resize() {
+  if (cfg.width && cfg.width > 0) return;
+  width = parNode ? parNode.clientWidth : window.innerWidth;
+  height = parNode ? parNode.clientHeight : window.innerHeight;
+  svg.attr("width", width).attr("height", height);
+  helio.attr("transform", "translate(" + width/2 + "," + height/2 + ")");
 
-  function resize() {
-    if (cfg.width && cfg.width > 0) return;
-    width = parent ? parent.clientWidth : window.innerWidth;
-    height = parent ? parent.clientHeight : window.innerHeight;
-    svg.attr("width", width).attr("height", height);
-    helio.attr("transform", "translate(" + width/2 + "," + height/2 + ")");
+  redraw();
+}
 
-    redraw();
-  }
-
-  //Projected trajectory from [x,y,z] vector array
-  function translate_tracks(tracks) {
-    var res = [];
-    
-    tracks.forEach( function(track) {
-      var t = [];
-      for (var i=0; i<track.length; i++) {
-        var p = vMultiply(rmatrix, track[i]);
-        p[0] *= scale; p[2] *= scale;  
-        t.push([p[0],-p[2]]);
-      }
-      res.push(t);
-    });
-    return res;
-  }
-
-  //Projected position from [x,y,z] vector
-  function translate(d) {
-    var p = vMultiply(rmatrix, d.pos),
-        off = d.r / 2,
-        offx = d.name == "Saturn" ? d.r*1.35 : off;
-    p[0] *= scale;  
-    p[2] *= scale;  
-    if (off) {
-      p[0] -= offx;
-      p[2] += off;
+//Projected trajectory from [x,y,z] vector array
+function translate_tracks(tracks) {
+  var res = [];
+  
+  tracks.forEach( function(track) {
+    var t = [];
+    for (var i=0; i<track.length; i++) {
+      var p = vMultiply(rmatrix, track[i]);
+      p[0] *= scale; p[2] *= scale;  
+      t.push([p[0],-p[2]]);
     }
-    return "translate(" + p[0] + "," + -p[2] + ")";
+    res.push(t);
+  });
+  return res;
+}
+
+//Projected position from [x,y,z] vector
+function translate(d) {
+  var p = vMultiply(rmatrix, d.pos),
+      off = d.r / 2,
+      offx = d.name == "Saturn" ? d.r*1.35 : off;
+  p[0] *= scale;  
+  p[2] *= scale;  
+  if (off) {
+    p[0] -= offx;
+    p[2] += off;
   }
+  return "translate(" + p[0] + "," + -p[2] + ")";
+}
 
-  function redraw() {
-    //d3.event.preventDefault();
-    scale = zoom.scale();  
-    if (d3.event.sourceEvent.type !== "wheel") {
-      var trans = zoom.translate();
-      angle = [30-z(trans[1]), 0, 90+x(trans[0])];
-      rmatrix = getRotation(angle);
-    }
-    //console.log(d3.event.sourceEvent.type);
-    //console.log(x(trans[0]) + ", " + y(trans[1]));
-
-    rsun = Math.pow(scale, 0.8);
-    sun.attr({"x": -rsun/2, "y": -rsun/2, "width": rsun, "height": rsun});
-    
-    planet.attr("transform", translate);
-
-    tdata = translate_tracks(tracks);
-
-    track.data(tdata).attr("d", line);
-    sbo.attr("transform", translate);
+function redraw() {
+  //d3.event.preventDefault();
+  scale = zoom.scale();  
+  if (d3.event && d3.event.sourceEvent.type !== "wheel") {
+    var trans = zoom.translate();
+    angle = [30-z(trans[1]), 0, 90+x(trans[0])];
+    rmatrix = getRotation(angle);
   }
-};this.Orrery = Orrery;
+  //console.log(d3.event.sourceEvent.type);
+  //console.log(x(trans[0]) + ", " + y(trans[1]));
+
+  var rsun = Math.pow(scale, 0.8);
+  sun.attr({"x": -rsun/2, "y": -rsun/2, "width": rsun, "height": rsun});
+  
+  pl.attr("transform", translate);
+
+  tdata = translate_tracks(tracks);
+  tr.data(tdata).attr("d", line);
+  
+  sb.attr("transform", translate);
+  if (sc) sc.attr("transform", translate);
+}
+
+Orrery.display = display;
+Orrery.update = update;this.Orrery = Orrery;
 })();
