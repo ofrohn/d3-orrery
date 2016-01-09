@@ -604,7 +604,7 @@ var display = function(config, date) {
             "height": rsun});
 
 
-  //Diplay planets with image and orbital track
+  //Display planets with image and orbital track
   if (cfg.planets.show) { 
     d3.json('data/planets.json', function(error, json) {
       if (error) return console.log(error);
