@@ -9,6 +9,12 @@ function isArray(o) { return Object.prototype.toString.call(o) === "[object Arra
 function isObject(o) { var type = typeof o;  return type === 'function' || type === 'object' && !!o; }
 function isFunction(o) { return typeof o == 'function' || false; }
 
+function dist(p1, p2){
+  var θ1 = p1.θ * deg2rad, ϕ1 = p1.ϕ * deg2rad,
+      θ2 = p2.θ * deg2rad, ϕ2 = p2.ϕ * deg2rad;
+
+  return Math.sqrt(p1.r*p1.r + p2.r*p2.r - 2*p1.r*p2.r * (Math.sin(θ1) * Math.sin(θ2) * Math.cos(ϕ1-ϕ2) + Math.cos(θ1) * Math.cos(θ2)));
+}
 
 function attach(node, event, func) {
   if (node.addEventListener) node.addEventListener(event, func, false);
