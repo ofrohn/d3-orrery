@@ -10,7 +10,7 @@ var getObject = function(dt, d) {
   var e = d.elements[index];
   var pos = transform(e, dt);
   
-  var res = {name: d.name, pos: [-pos.y*10, pos.z*10, -pos.x*10], elements: d.elements};
+  var res = {name: d.name, pos: [-pos.y, pos.z, -pos.x], elements: d.elements};
   // size
   if (d.H && d.H !== "") res.r = 12 -d.H;
   else if (d.r && d.r !== "") res.r = d.r;
@@ -31,7 +31,7 @@ var updateObject = function(dt, e) {
   //var e = d.elements[index];
   var pos = transform(e[index], dt);
 
-  return [-pos.y*10, pos.z*10, -pos.x*10];
+  return [-pos.y, pos.z, -pos.x];
 };
 
 //Find valid set of elements for date
@@ -52,7 +52,7 @@ var getEpoch = function(dt, e) {
 
 var getOrbit = function(dt, d) {  
   var e = d.elements[0], 
-      p, p0 = transform(e, dt),
+      col, p, p0 = transform(e, dt),
       geo = new THREE.Geometry();
   
   var period = p0.P,
@@ -62,12 +62,14 @@ var getOrbit = function(dt, d) {
   
   while (dtDiff(current, end) > 0) {
     p = transform(e, current);
-    geo.vertices.push( new THREE.Vector3(-p.y*10, p.z*10, -p.x*10));
+    geo.vertices.push(new THREE.Vector3(-p.y, p.z, -p.x));
+    col = p.z >= 0 ? 0x999999 : 0x666666;
+    geo.colors.push(new THREE.Color(col));
+
     current = dtAdd(current, step);
   }
 
-  geo.vertices.push( new THREE.Vector3(-p0.y*10, p0.z*10, -p0.x*10));
-  //res.push([p0.x,p0.y,p0.z]);
+  //geo.vertices.push( new THREE.Vector3(-p0.y, p0.z, -p0.x));
   
   return geo;
 };

@@ -1,3 +1,5 @@
+var deg2rad = Math.PI / 180;
+
 function $(id) { return document.getElementById(id); }
 function px(n) { return n + "px"; } 
 function Round(x, dg) { return(Math.round(Math.pow(10,dg)*x)/Math.pow(10,dg)); }
@@ -15,6 +17,7 @@ function dist(p1, p2){
 
   return Math.sqrt(p1.r*p1.r + p2.r*p2.r - 2*p1.r*p2.r * (Math.sin(θ1) * Math.sin(θ2) * Math.cos(ϕ1-ϕ2) + Math.cos(θ1) * Math.cos(θ2)));
 }
+
 
 function attach(node, event, func) {
   if (node.addEventListener) node.addEventListener(event, func, false);
@@ -87,8 +90,18 @@ var Trig = {
   acosh: function (val) { return Math.log(val + Math.sqrt(val * val - 1)); },
   normalize0: function(val) {  return ((val + Math.PI*3) % (Math.PI*2)) - Math.PI;  },
   normalize: function(val) {  return ((val + Math.PI*2) % (Math.PI*2));  },  
-  deg2rad: function(val)  {  return val * Math.PI / 180; },
-  hour2rad: function(val) {  return val * Math.PI / 12; },
-  rad2deg: function(val)  {  return val * 180 / Math.PI; },
-  rad2hour: function(val) {  return val * 12 / Math.PI; },
+  //deg2rad: function(val)  {  return val * Math.PI / 180; },
+  //hour2rad: function(val) {  return val * Math.PI / 12; },
+  //rad2deg: function(val)  {  return val * 180 / Math.PI; },
+  //rad2hour: function(val) {  return val * 12 / Math.PI; },
+  cartesian: function(p) {
+    var θ = p[0] * deg2rad, ϕ = p[1] * deg2rad, r = p[2];
+    return [r * Math.sin(ϕ) * Math.cos(θ), r * Math.sin(ϕ) * Math.sin(θ), r * Math.cos(ϕ)];
+  }
+  spherical: function(p) {
+    var r = Math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z),
+        θ = Math.atan(p.y / p.x),
+        ϕ = Math.acos(p.z / r);
+    return  [θ / deg2rad, ϕ / deg2rad, r];
+  }
 };

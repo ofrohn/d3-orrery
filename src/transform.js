@@ -58,7 +58,7 @@ var transform = function(item, date, gmass) {
   derive(dat);
   trueAnomaly(dat);
   cartesian(dat);
-  //ecliptic(dat);
+  ecliptic(dat);
   return dat;
 };
 

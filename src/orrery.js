@@ -4,9 +4,6 @@ var Orrery = {
 };
 
 var container, parNode, renderer, scene, camera,
-    scale = 60, 
-    angle = [30, 0, 90],
-    margin = {h:40, v:20},
     width, height, cfg,
     renderFcts= [];
 
@@ -43,16 +40,16 @@ var display = function(config, date) {
   
 
   camera = new THREE.PerspectiveCamera(45, width/height, 0.01, 10000);
-  camera.position.z = 35;
-  camera.position.y = 20;
-  var controls = new THREE.OrbitControls(camera)
+  camera.position.z = 3.5;
+  camera.position.y = 2;
+  var controls = new THREE.OrbitControls(camera);
 
   var light = new THREE.AmbientLight( 0xffffff )
   scene.add(light);
 
   
   container = d3.select(parID).append("container");
-
+  
   var mesh = Planets.create("sol");
   scene.add(mesh);
 
@@ -62,59 +59,78 @@ var display = function(config, date) {
     if (error) return console.log(error);
           
     for (var key in json) {
+      var dat = {};
       if (!has(json, key)) continue;
       //object: pos[x,y,z],name,r,icon,elements
       var planet = getObject(dt, json[key]);
-      //track: [x,y,z]
+      dat.body = planet;
+      
       if (has(json[key], "trajectory")) {
+        //track: [x,y,z]
         var track = getOrbit(dt, json[key]);
-        var mat = new THREE.LineDashedMaterial({
-          color: "#999",
-          dashSize: 1,
-          gapSize: 3,
+        var mat = new THREE.LineBasicMaterial({
+          color: 0xffffff,
+          vertexColors: THREE.VertexColors,
           fog: true
         });
         mat.transparent = true;
-        mat.opacity = 0.5;
+        mat.opacity = 0.6;
 
         var line = new THREE.Line(track, mat);
         scene.add(line);
+        dat.track = line;
       }
       var mesh = Planets.create(key);
-      if (mesh) {
-        mesh.position.fromArray(planet.pos);
-        scene.add(mesh);
+      if (!mesh) {
+        mesh = new THREE.Mesh(new THREE.SphereGeometry(0.2, 32, 32), new THREE.MeshPhongMaterial({color: "#fff"})); 
       }
+      mesh.position.fromArray(planet.pos);
+      scene.add(mesh);
+      dat.mesh = mesh;
     }
 
     
  /*
-    var mat = THREE.LineDashedMaterial({
-      color: "#ccc",
-      dashSize: 2,
-      gapSize: 3,
-      fog: true
-    });
-    
-    tracks.forEach( function(d, i) {
-      var line = new THREE.Line(d, mat);
-      scene.add(line);
-    });
-    
+        
     container.selectAll(".planets").data(planets)
       .enter().append("path")
       .attr("class", "planet");
 */    
   });
 
+  //Display Small bodies as dots
+  d3.json('data/sbo.json', function(error, json) {
+    if (error) return console.log(error);
+    
+   var geo = new THREE.Geometry();
+   var mat = new THREE.PointsMaterial({
+     color:0xffffff, 
+     size:0.01,
+     fog: true
+   });
+   for (var key in json) {
+      var dat = {};
+      if (!has(json, key)) continue;
+      //sbos: pos[x,y,z],name,r
+      //if (json[key].H >= 11) continue;
+      var sbo = getObject(dt, json[key]);
+      var vec = new THREE.Vector3();
+      vec.fromArray(sbo.pos);
+      geo.vertices.push(vec);
+    }
+    var pts = new THREE.Points(geo, mat);
+    scene.add(pts);
+  });
   
   // render the scene
   renderFcts.push(function(){
     //meshes.forEach( function(d, i) { d.rotateOnAxis( new THREE.Vector3( 0, 1, 0 ), rot[i]); })
+    var p = camera.position;
+    scene.fog.density = 0.2 / Math.sqrt(p.x*p.x + p.y*p.y + p.z*p.z);
     renderer.render(scene, camera);  
   });
   
-  start();
+  init();
 }
 
 
@@ -128,7 +144,7 @@ window.addEventListener('resize', function(){
  
 // run the rendering loop
 var lastTimeMsec= null;
-function start() {
+function init() {
   requestAnimationFrame(function animate(nowMsec) {
     // keep looping
     requestAnimationFrame(animate);
@@ -145,17 +161,7 @@ function start() {
 
 Orrery.display = display;
 
-/*var canvas, context, container, helio, z, x, rmatrix,
-    parNode,
-    scale = 60, 
-    angle = [30, 0, 90],
-    margin = {h:40, v:20},
-    width, height, cfg,
-    sun, pl, tr, sc, sb,
-    planets = [], sbos = [], probes = [], tracks = [], tdata;
-
-var camera, scene = new THREE.Scene(),
-    renderer = new THREE.WebGLRenderer();
+/*
 
 var update = function(dt) {
   var i, pos;
@@ -174,93 +180,8 @@ var update = function(dt) {
 
 
 var display = function(config, date) {
-  var dt = date || new Date(),
-      parID = null; 
-
-  cfg = settings.set(config); 
-
-  parNode = $(cfg.container);
-  if (parNode) { 
-    parID = "#"+cfg.container;
-    var stl = window.getComputedStyle(parNode, null);
-    if (!parseInt(stl.width) && !cfg.width) parNode.style.width = px(window.innerWidth);    
-    if (!parseInt(stl.height) && !cfg.height) parNode.style.height = px(window.innerHeight);    
-  } else { 
-    parID = "body"; 
-    parNode = null; 
-  }
-
-  // Can be in box element parNode, otherwise full screen
-  width = parNode ? parNode.clientWidth : window.innerWidth;
-  height = parNode ? parNode.clientHeight : window.innerHeight;
-
-  camera = new THREE.PerspectiveCamera( 75, width / height, 0.1, 1000 );
-  renderer.setSize( width, height );
-  document.body.appendChild( renderer.domElement );
-
-  camera.position.z = 5;
-
-  container = d3.select(parNode).append("container");
-
-  //var rsun = Math.pow(scale, 0.8);
-  container.selectAll(".sun")
-         .datum({"img": "img/sun.png"})
-         .enter().append("path")
-         .attr("class", "sun");
   
-  //Display planets with image and orbital track
-  d3.json('data/planets.json', function(error, json) {
-    if (error) return console.log(error);
-          
-    for (var key in json) {
-      if (!has(json, key)) continue;
-      //object: pos[x,y,z],name,r,icon,elements
-      planets.push(getObject(dt, json[key]));
-      //track: [x,y,z]
-      //if (cfg.planets.trajectory && has(json[key], "trajectory"))
-      tracks.push(getOrbit(dt, json[key]));
-    }
-
-    var mat = THREE.LineDashedMaterial({
-      color: "#ccc",
-      dashSize: 2,
-      gapSize: 3,
-      fog: true
-    });
-    
-    tracks.forEach( function(d, i) {
-      var line = new THREE.Line(d, mat);
-      scene.add(line);
-    });
-    
-    container.selectAll(".planets").data(planets)
-      .enter().append("path")
-      .attr("class", "planet");
-    
-    update();
-  });
      
-  //Display Small bodies as dots
-  if (cfg.sbos.show) { 
-    d3.json('data/sbo.json', function(error, json) {
-      if (error) return console.log(error);
-      
-      for (var key in json) {
-        if (!has(json, key)) continue;
-        //sbos: pos[x,y,z],name,r
-        if (json[key].H < 11)
-          sbos.push(getObject(dt, json[key]));
-      }
-      //console.log(objects);
-      
-      container.selectAll(".sbos").data(sbos)
-        .enter().append("path")
-        //.attr("transform", translate)
-        .attr("class", "sbo");
-        //.attr("d", d3.svg.symbol().size( function(d) { return d.r; } ));
-
-    });
-  }
   
   //Display spacecraft with images (opt. text/trajectory)
   if (cfg.spacecraft.show) { 

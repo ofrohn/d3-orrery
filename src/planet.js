@@ -2,12 +2,10 @@ var Planets = Planets || {};
 
 Planets.baseURL = 'images/';
 
-var deg2rad = Math.PI / 180;
-
 var loader = new THREE.TextureLoader();
 
 Planets.params = {
-  "sol": {map: "sunmap.jpg", radius: 1.5, tilt: 7.25, rot: 1.0438},
+  "sol": {map: "sunmap.jpg", radius: 1.2, tilt: 7.25, rot: 1.0438},
   "mer": {map: "mercurymap.jpg", bump:"mercurybump.jpg", radius: 0.3, tilt: 0, rot: 58.646},
   "ven": {map: "venusmap.jpg", radius: 0.4, tilt: 177.3, rot: 4.05},
   "ter": {map: "earthmapclouds.jpg", bump:"earthbump.jpg", radius: 0.4, tilt: 23.45, rot: 0.9973},
@@ -16,21 +14,24 @@ Planets.params = {
   "cer": {map: "ceresmap.jpg", radius: 0.15, tilt: 4.0, rot: 0.378},
   "ves": {map: "vestamap.jpg", bump: "vestabump.jpg", radius: 0.15, tilt: 29.0, rot: 0.223},
   "jup": {map: "jupitermap.jpg", radius: 1.2, tilt: 3.12, rot: 0.414,
-             ring: {map: "jupiterrings.gif", radius: 3.2, opacity: 0.5} },
+             ring: {map: "jupiterrings.gif", radius: 2.7, opacity: 0.5} },
   "sat": {map: "saturnmap.jpg", radius: 1.2, tilt: 26.73, rot: 0.444, 
-             ring: {map: "saturnrings.gif", radius: 2.5, opacity: 0.9} },
+             ring: {map: "saturnrings.gif", radius: 2.6, opacity: 0.9} },
   "ura": {map: "uranusmap.jpg", radius: 1.0, tilt: 97.86, rot: 0.718, 
-             ring: {map: "uranusrings.gif", radius: 2.0, opacity: 0.6} },
+             ring: {map: "uranusrings.gif", radius: 2.1, opacity: 0.6} },
   "nep": {map: "neptunemap.jpg", radius: 1.0, tilt: 29.56, rot: 0.671, 
-             ring: {map: "neptunerings.gif", radius: 2.4, opacity: 0.8} },
+             ring: {map: "neptunerings.gif", radius: 2.5, opacity: 0.8} },
   "plu": {map: "plutomap.jpg", radius: 0.2, tilt: 122.53, rot: 6.387}  
 }
 
-Planets.create = function(body) {
-  if (!Planets.params.hasOwnProperty(body)) return console.log("Object not found: " + body);
-  var p = Planets.params[body], arg = {};
+Planets.create = function(body, param) {
+  if (!Planets.params.hasOwnProperty(body)) {
+    console.log("Object not found: " + body);
+    return null;
+  }
+  var p = param || Planets.params[body], arg = {};
   
-  var geometry = new THREE.SphereGeometry(p.radius, 32, 32);
+  var geometry = new THREE.SphereGeometry(p.radius/10, 32, 32);
   
   arg.map = loader.load(Planets.baseURL + p.map);
 
@@ -110,7 +111,7 @@ Planets.createRing = function(body) {
   }, false);
   imageMap.src = map;
   
-  var geometry = new Planets._RingGeometry(p.radius + 0.05, p.ring.radius, 64);
+  var geometry = new Planets._RingGeometry(p.radius/10 + 0.005, p.ring.radius/10, 64);
   var material = new THREE.MeshPhongMaterial({
     map: new THREE.Texture(cnv),
     side: THREE.DoubleSide,
@@ -169,7 +170,7 @@ Planets.createEarthCloud = function() {
   }, false);
   imageMap.src = Planets.baseURL + 'earthcloudmap.jpg';
 
-  var geometry = new THREE.SphereGeometry(Planets.params.earth.radius + 0.005, 32, 32);
+  var geometry = new THREE.SphereGeometry(Planets.params.earth.radius/10 + 0.0005, 32, 32);
   var material = new THREE.MeshPhongMaterial({
     map    : new THREE.Texture(canvasResult),
     side    : THREE.DoubleSide,
