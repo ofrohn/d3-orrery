@@ -1,4 +1,4 @@
-/* global transform, dt, dtAdd, dtDiff, has  */
+/* global THREE, transform, dt, dtAdd, dtDiff, has  */
 
 var getObject = function(dt, d) {
   
@@ -12,7 +12,7 @@ var getObject = function(dt, d) {
   
   var res = {name: d.name, pos: [-pos.y, pos.z, -pos.x], elements: d.elements};
   // size
-  if (d.H && d.H !== "") res.r = 12 -d.H;
+  if (d.H && d.H !== "") res.r = 13 - d.H;
   else if (d.r && d.r !== "") res.r = d.r;
   else res.r = 20;
   

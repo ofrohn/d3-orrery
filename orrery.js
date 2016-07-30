@@ -1,5 +1,253 @@
 // Copyright 2015 Olaf Frohn https://github.com/ofrohn, see LICENSE
-!(function() {//Matrix calculations
+!(function() {
+var Planets = Planets || {};
+
+Planets.baseURL = 'images/';
+
+var loader = new THREE.TextureLoader();
+
+Planets.params = {
+  "sol": {map: "sunmap.jpg", radius: 1.2, tilt: 7.25, rot: 1.0438},
+  "mer": {map: "mercurymap.jpg", bump:"mercurybump.jpg", radius: 0.3, tilt: 0, rot: 58.646},
+  "ven": {map: "venusmap.jpg", radius: 0.4, tilt: 177.3, rot: 4.05},
+  "ter": {map: "earthmapclouds.jpg", bump:"earthbump.jpg", radius: 0.4, tilt: 23.45, rot: 0.9973},
+  "lun": {map: "moonmap.jpg", bump:"moonbump.jpg", radius: 0.25, tilt: 1.54, rot: 27.3217},
+  "mar": {map: "marsmap.jpg", bump:"marsbump.jpg", radius: 0.35, tilt: 25.19, rot: 1.026},
+  "cer": {map: "ceresmap.jpg", radius: 0.15, tilt: 4.0, rot: 0.378},
+  "ves": {map: "vestamap.jpg", bump: "vestabump.jpg", radius: 0.15, tilt: 29.0, rot: 0.223},
+  "jup": {map: "jupitermap.jpg", radius: 1.2, tilt: 3.12, rot: 0.414,
+             ring: {map: "jupiterrings.gif", radius: 2.7, opacity: 0.5} },
+  "sat": {map: "saturnmap.jpg", radius: 1.2, tilt: 26.73, rot: 0.444, 
+             ring: {map: "saturnrings.gif", radius: 2.6, opacity: 0.9} },
+  "ura": {map: "uranusmap.jpg", radius: 1.0, tilt: 97.86, rot: 0.718, 
+             ring: {map: "uranusrings.gif", radius: 2.1, opacity: 0.6} },
+  "nep": {map: "neptunemap.jpg", radius: 1.0, tilt: 29.56, rot: 0.671, 
+             ring: {map: "neptunerings.gif", radius: 2.5, opacity: 0.8} },
+  "plu": {map: "plutomap.jpg", radius: 0.2, tilt: 122.53, rot: 6.387}  
+};
+
+Planets.create = function(body, param) {
+  if (!Planets.params.hasOwnProperty(body)) {
+    console.log("Object not found: " + body);
+    return null;
+  }
+  var p = param || Planets.params[body], arg = {};
+  
+  var geometry = new THREE.SphereGeometry(p.radius/10, 32, 32);
+  
+  arg.map = loader.load(Planets.baseURL + p.map);
+
+  if (p.hasOwnProperty("bump")) {
+    arg.bumpMap = loader.load(Planets.baseURL + p.bump);  
+    arg.bumpScale = 0.05;
+  }  
+  if (p.hasOwnProperty("spec")) {
+    arg.specularMap = loader.load(Planets.baseURL + p.spec);  
+    arg.specular = new THREE.Color('grey');
+  }
+  
+  var material = new THREE.MeshPhongMaterial(arg);
+  var mesh = new THREE.Mesh(geometry, material);
+  
+  if (p.hasOwnProperty("ring")) {
+    mesh.receiveShadow	= true;
+    mesh.castShadow = true;
+    var ring = Planets.createRing(body);
+    ring.receiveShadow	= true;
+    ring.castShadow = true;
+    mesh.add(ring);
+  }
+  /*if (body === "earth") {
+    var cloud = Planets.createEarthCloud();
+    mesh.add(cloud);
+  }*/
+  mesh.rotation.set(0, 0, p.tilt * deg2rad);  
+  return mesh;
+};
+  
+  
+Planets.createRing = function(body) {
+  var p = Planets.params[body], map = Planets.baseURL + p.ring.map;
+  
+  // create destination canvas
+  var cnv = document.createElement('canvas');
+  cnv.width = 1024;
+  cnv.height = 64;
+  var ctx = cnv.getContext('2d');
+
+  // load ringmap
+  var imageMap = new Image();
+  imageMap.addEventListener("load", function() {
+    
+    // create dataMap ImageData for ringmap
+    var cnvMap = document.createElement('canvas');
+    cnvMap.width = imageMap.width;
+    cnvMap.height= imageMap.height;
+    var ctxMap = cnvMap.getContext('2d');
+    ctxMap.drawImage(imageMap, 0, 0);
+    var dataMap = ctxMap.getImageData(0, 0, cnvMap.width, cnvMap.height);
+
+    var imageTrans = new Image();
+    imageTrans.addEventListener("load", function() {
+      var cnvTrans = document.createElement('canvas');
+      cnvTrans.width = imageTrans.width;
+      cnvTrans.height = imageTrans.height;
+      var ctxTrans = cnvTrans.getContext('2d');
+      ctxTrans.drawImage(imageTrans, 0, 0);
+      var dataTrans = ctxTrans.getImageData(0, 0, cnvTrans.width, cnvTrans.height);
+      // merge dataMap + dataTrans into dataResult
+      var dataResult = ctxMap.createImageData(cnv.width, cnv.height);
+      for(var y = 0, offset = 0; y < imageMap.height; y++) {
+        for(var x = 0; x < imageMap.width; x++, offset += 4) {
+          dataResult.data[offset+0] = dataMap.data[offset+0];
+          dataResult.data[offset+1] = dataMap.data[offset+1];
+          dataResult.data[offset+2] = dataMap.data[offset+2];
+          dataResult.data[offset+3] = dataTrans.data[offset+0];
+        }
+      }
+      // update texture with result
+      ctx.putImageData(dataResult,0,0);
+      material.map.needsUpdate = true;
+    });
+    imageTrans.src = map;
+  }, false);
+  imageMap.src = map;
+  
+  var geometry = new Planets._RingGeometry(p.radius/10 + 0.005, p.ring.radius/10, 64);
+  var material = new THREE.MeshPhongMaterial({
+    map: new THREE.Texture(cnv),
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: p.ring.opacity,
+  });
+  var mesh = new THREE.Mesh(geometry, material);
+  mesh.lookAt(new THREE.Vector3(0,1,0));
+  return mesh;
+};
+
+Planets.createEarthCloud = function() {
+  // create destination canvas
+  var canvasResult = document.createElement('canvas');
+  canvasResult.width = 1024;
+  canvasResult.height = 512;
+  var contextResult = canvasResult.getContext('2d');
+
+  // load earthcloudmap
+  var imageMap = new Image();
+  imageMap.addEventListener("load", function() {
+    
+    // create dataMap ImageData for earthcloudmap
+    var canvasMap = document.createElement('canvas');
+    canvasMap.width = imageMap.width;
+    canvasMap.height= imageMap.height;
+    var contextMap = canvasMap.getContext('2d');
+    contextMap.drawImage(imageMap, 0, 0);
+    var dataMap = contextMap.getImageData(0, 0, canvasMap.width, canvasMap.height);
+
+    // load earthcloudmaptrans
+    var imageTrans = new Image();
+    imageTrans.addEventListener("load", function() {
+      // create dataTrans ImageData for earthcloudmaptrans
+      var canvasTrans   = document.createElement('canvas');
+      canvasTrans.width = imageTrans.width;
+      canvasTrans.height = imageTrans.height;
+      var contextTrans = canvasTrans.getContext('2d');
+      contextTrans.drawImage(imageTrans, 0, 0);
+      var dataTrans   = contextTrans.getImageData(0, 0, canvasTrans.width, canvasTrans.height);
+      // merge dataMap + dataTrans into dataResult
+      var dataResult   = contextMap.createImageData(canvasMap.width, canvasMap.height);
+      for(var y = 0, offset = 0; y < imageMap.height; y++){
+        for(var x = 0; x < imageMap.width; x++, offset += 4){
+          dataResult.data[offset+0] = dataMap.data[offset+0];
+          dataResult.data[offset+1] = dataMap.data[offset+1];
+          dataResult.data[offset+2] = dataMap.data[offset+2];
+          dataResult.data[offset+3] = 255 - dataTrans.data[offset+0];
+        }
+      }
+      // update texture with result
+      contextResult.putImageData(dataResult,0,0);
+      material.map.needsUpdate = true;
+    });
+    imageTrans.src = Planets.baseURL + 'earthcloudmaptrans.jpg';
+  }, false);
+  imageMap.src = Planets.baseURL + 'earthcloudmap.jpg';
+
+  var geometry = new THREE.SphereGeometry(Planets.params.earth.radius/10 + 0.0005, 32, 32);
+  var material = new THREE.MeshPhongMaterial({
+    map    : new THREE.Texture(canvasResult),
+    side    : THREE.DoubleSide,
+    transparent  : true,
+    opacity    : 0.9,
+  });
+  var mesh = new THREE.Mesh(geometry, material);
+  return mesh;
+};
+
+
+Planets._RingGeometry = function(innerRadius, outerRadius, thetaSegments) {
+
+  THREE.Geometry.call( this );
+
+  innerRadius = innerRadius || 0;
+  outerRadius = outerRadius || 50;
+  thetaSegments = thetaSegments  || 8;
+
+  var normal = new THREE.Vector3( 0, 0, 1 );
+
+  for(var i = 0; i < thetaSegments; i++ ){
+    var angleLo = (i / thetaSegments) *Math.PI*2;
+    var angleHi = ((i+1) / thetaSegments) *Math.PI*2;
+
+    var vertex1 = new THREE.Vector3(innerRadius * Math.cos(angleLo), innerRadius * Math.sin(angleLo), 0);
+    var vertex2 = new THREE.Vector3(outerRadius * Math.cos(angleLo), outerRadius * Math.sin(angleLo), 0);
+    var vertex3 = new THREE.Vector3(innerRadius * Math.cos(angleHi), innerRadius * Math.sin(angleHi), 0);
+    var vertex4 = new THREE.Vector3(outerRadius * Math.cos(angleHi), outerRadius * Math.sin(angleHi), 0);
+
+    this.vertices.push( vertex1 );
+    this.vertices.push( vertex2 );
+    this.vertices.push( vertex3 );
+    this.vertices.push( vertex4 );
+    
+
+    var vertexIdx = i * 4;
+
+    // Create the first triangle
+    var face = new THREE.Face3(vertexIdx + 0, vertexIdx + 1, vertexIdx + 2, normal);
+    var uvs = [];
+
+    var uv = new THREE.Vector2(0, 0);
+    uvs.push(uv);
+    uv = new THREE.Vector2(1, 0);
+    uvs.push(uv);
+    uv = new THREE.Vector2(0, 1);
+    uvs.push(uv);
+
+    this.faces.push(face);
+    this.faceVertexUvs[0].push(uvs);
+
+    // Create the second triangle
+    face = new THREE.Face3(vertexIdx + 2, vertexIdx + 1, vertexIdx + 3, normal);
+    uvs = [];
+
+    uv = new THREE.Vector2(0, 1);
+    uvs.push(uv);
+    uv = new THREE.Vector2(1, 0);
+    uvs.push(uv);
+    uv = new THREE.Vector2(1, 1);
+    uvs.push(uv);
+
+    this.faces.push(face);
+    this.faceVertexUvs[0].push(uvs);
+  }
+
+  //this.computeCentroids();
+  this.computeFaceNormals();
+
+  this.boundingSphere = new THREE.Sphere( new THREE.Vector3(), outerRadius );
+};
+Planets._RingGeometry.prototype = Object.create( THREE.Geometry.prototype );
+
+//Matrix calculations
 
 //Multiply 3x3 matrix with 3d-vector
 var vMultiply = function(m, v) {
@@ -49,6 +297,8 @@ var rMatrix = function(axis, θ) {
    }
 };
 
+var deg2rad = Math.PI / 180;
+
 function $(id) { return document.getElementById(id); }
 function px(n) { return n + "px"; } 
 function Round(x, dg) { return(Math.round(Math.pow(10,dg)*x)/Math.pow(10,dg)); }
@@ -59,6 +309,13 @@ function isNumber(n) { return !isNaN(parseFloat(n)) && isFinite(n); }
 function isArray(o) { return Object.prototype.toString.call(o) === "[object Array]"; }
 function isObject(o) { var type = typeof o;  return type === 'function' || type === 'object' && !!o; }
 function isFunction(o) { return typeof o == 'function' || false; }
+
+function dist(p1, p2){
+  var θ1 = p1.θ * deg2rad, ϕ1 = p1.ϕ * deg2rad,
+      θ2 = p2.θ * deg2rad, ϕ2 = p2.ϕ * deg2rad;
+
+  return Math.sqrt(p1.r*p1.r + p2.r*p2.r - 2*p1.r*p2.r * (Math.sin(θ1) * Math.sin(θ2) * Math.cos(ϕ1-ϕ2) + Math.cos(θ1) * Math.cos(θ2)));
+}
 
 
 function attach(node, event, func) {
@@ -130,12 +387,22 @@ var Trig = {
   tanh: function (val) { return 2.0 / (1.0 + Math.exp(-2.0 * val)) - 1.0; },
   asinh: function (val) { return Math.log(val + Math.sqrt(val * val + 1)); },
   acosh: function (val) { return Math.log(val + Math.sqrt(val * val - 1)); },
-  normalize0: function(val) {  return ((val + Math.PI*3) % (Math.PI*2)) - Math.PI;  },
-  normalize: function(val) {  return ((val + Math.PI*2) % (Math.PI*2));  },  
-  deg2rad: function(val)  {  return val * Math.PI / 180; },
-  hour2rad: function(val) {  return val * Math.PI / 12; },
-  rad2deg: function(val)  {  return val * 180 / Math.PI; },
-  rad2hour: function(val) {  return val * 12 / Math.PI; },
+  normalize0: function(val) {  return ((val + Math.PI*3) % (Math.PI*2)) - Math.PI; },
+  normalize: function(val) {  return ((val + Math.PI*2) % (Math.PI*2)); },  
+  //deg2rad: function(val)  {  return val * Math.PI / 180; },
+  //hour2rad: function(val) {  return val * Math.PI / 12; },
+  //rad2deg: function(val)  {  return val * 180 / Math.PI; },
+  //rad2hour: function(val) {  return val * 12 / Math.PI; },
+  cartesian: function(p) {
+    var θ = p[0] * deg2rad, ϕ = p[1] * deg2rad, r = p[2];
+    return [r * Math.sin(ϕ) * Math.cos(θ), r * Math.sin(ϕ) * Math.sin(θ), r * Math.cos(ϕ)];
+  },
+  spherical: function(p) {
+    var r = Math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z),
+        θ = Math.atan(p.y / p.x),
+        ϕ = Math.acos(p.z / r);
+    return  [θ / deg2rad, ϕ / deg2rad, r];
+  }
 };
 
 
@@ -198,7 +465,7 @@ var transform = function(item, date, gmass) {
   derive(dat);
   trueAnomaly(dat);
   cartesian(dat);
-  //ecliptic(dat);
+  ecliptic(dat);
   return dat;
 };
 
@@ -401,9 +668,9 @@ var getObject = function(dt, d) {
   var e = d.elements[index];
   var pos = transform(e, dt);
   
-  var res = {name: d.name, pos: [pos.x, pos.y, pos.z], elements: d.elements};
+  var res = {name: d.name, pos: [-pos.y, pos.z, -pos.x], elements: d.elements};
   // size
-  if (d.H && d.H !== "") res.r = 12 -d.H;
+  if (d.H && d.H !== "") res.r = 13 - d.H;
   else if (d.r && d.r !== "") res.r = d.r;
   else res.r = 20;
   
@@ -422,7 +689,7 @@ var updateObject = function(dt, e) {
   //var e = d.elements[index];
   var pos = transform(e[index], dt);
 
-  return [pos.x, pos.y, pos.z];
+  return [-pos.y, pos.z, -pos.x];
 };
 
 //Find valid set of elements for date
@@ -442,23 +709,27 @@ var getEpoch = function(dt, e) {
 };
 
 var getOrbit = function(dt, d) {  
-  var e = d.elements[0], res = [],
-      p, p0 = transform(e, dt);
+  var e = d.elements[0], 
+      col, p, p0 = transform(e, dt),
+      geo = new THREE.Geometry();
   
   var period = p0.P,
       end = dtAdd(dt, period, "y"),
-      step = dtDiff(dt, end)/45/(p0.a),
+      step = dtDiff(dt, end)/90,
       current = new Date(dt.valueOf());
   
   while (dtDiff(current, end) > 0) {
     p = transform(e, current);
-    res.push([p.x,p.y,p.z]);
+    geo.vertices.push(new THREE.Vector3(-p.y, p.z, -p.x));
+    col = p.z >= 0 ? 0x999999 : 0x666666;
+    geo.colors.push(new THREE.Color(col));
+
     current = dtAdd(current, step);
   }
 
-  res.push([p0.x,p0.y,p0.z]);
+  //geo.vertices.push( new THREE.Vector3(-p0.y, p0.z, -p0.x));
   
-  return res;
+  return geo;
 };
 
 //Default configuration
@@ -524,41 +795,12 @@ var settings = {
 
 
 var Orrery = {
-  version: '0.2',
-  svg: null
+  version: '0.4'
 };
 
-var svg, helio, z, x, rmatrix,
-    parNode,
-    scale = 60, 
-    angle = [30, 0, 90],
+var container, parNode, renderer, scene, camera,
     width, height, cfg,
-    sun, pl, tr, sc, sb,
-    planets = [], sbos = [], probes = [], tracks = [], tdata;
-
-var zoom = d3.behavior.zoom().center([0, 0]).scaleExtent([1, 150]).scale(scale).on("zoom", redraw);
-var line = d3.svg.line().x( function(d) { return d[0]; } ).y( function(d) { return d[1]; } );
-
-var update = function(dt) {
-  var i, pos;
-  
-  for (i=0; i<planets.length; i++) {
-    pos = updateObject(dt, planets[i].elements);
-    if (pos) planets[i].pos = pos;
-  }  
-
-  for (i=0; i<sbos.length; i++) {
-    pos = updateObject(dt, sbos[i].elements);
-    if (pos) sbos[i].pos = pos;
-  }  
-
-  for (i=0; i<probes.length; i++) {
-    pos = updateObject(dt, probes[i].elements);
-    if (pos) probes[i].pos = pos;
-  }  
-  
-  redraw();
-};
+    renderFcts= [];
 
 var display = function(config, date) {
   var dt = date || new Date(),
@@ -574,203 +816,165 @@ var display = function(config, date) {
     if (!parseInt(stl.height) && !cfg.height) parNode.style.height = px(window.innerHeight);    
   } else { 
     parID = "body"; 
-    parNode = null; 
+    parNode = document.body; 
   }
 
-  // Can be in box element par, otherwise full screen
+  // Can be in box element parNode, otherwise full screen
   width = parNode ? parNode.clientWidth : window.innerWidth;
   height = parNode ? parNode.clientHeight : window.innerHeight;
 
-  //var trans = transform(dt);
+  // init renderer
+  renderer = new THREE.WebGLRenderer({antialias : true});
+  renderer.setClearColor("#000");
+  renderer.setSize( width, height );
+  parNode.appendChild(renderer.domElement );
+  //renderer.shadowMapEnabled  = true;
+  
+  scene = new THREE.Scene();
+  scene.fog = new THREE.FogExp2(0x000000, 0.00025);
+  
 
-  //Rotation matrix
-  rmatrix = getRotation(angle);
+  camera = new THREE.PerspectiveCamera(45, width/height, 0.01, 10000);
+  camera.position.z = 3.5;
+  camera.position.y = 2;
+  var controls = new THREE.OrbitControls(camera);
 
-  //Scales for rotation with dragging
-  x = d3.scale.linear().domain([-width/2, width/2]).range([-360, 360]);
-  z = d3.scale.linear().domain([-height/2, height/2]).range([90, -90]).clamp(true);
+  var light = new THREE.AmbientLight(0xffffff);
+  scene.add(light);
 
-  svg = d3.select(parID).append("svg").attr("width", width).attr("height", height).call(zoom);
+  container = d3.select(parID).append("container");
+  
+  var mesh = Planets.create("sol");
+  scene.add(mesh);
 
-  //Coordinate origin [0,0] at Sun position
-  helio = svg.append("g").attr("transform", "translate(" + width/2 + "," + height/2 + ")");
-
-  var rsun = Math.pow(scale, 0.8);
-  sun = helio.append("image")
-     .attr({"xlink:href": "img/sun.png",
-            "x": -rsun/2,
-            "y": -rsun/2,
-            "width": rsun,
-            "height": rsun});
+	var glowMat = new THREE.SpriteMaterial({ 
+		map: loader.load( 'images/corona.jpg' ), 
+		useScreenCoordinates: false, 
+		color: 0xffff33, 
+    transparent: false, 
+    blending: THREE.AdditiveBlending
+	});
+	var glow = new THREE.Sprite(glowMat);
+	glow.scale.multiplyScalar(0.4);
+	mesh.add(glow);
 
 
   //Display planets with image and orbital track
-  if (cfg.planets.show) { 
-    d3.json('data/planets.json', function(error, json) {
-      if (error) return console.log(error);
-            
-      for (var key in json) {
-        if (!has(json, key)) continue;
-        //object: pos[x,y,z],name,r,icon,elements
-        planets.push(getObject(dt, json[key]));
+  d3.json('data/planets.json', function(error, json) {
+    if (error) return console.log(error);
+          
+    for (var key in json) {
+      if (!has(json, key)) continue;
+      var dat = {};
+      //object: pos[x,y,z],name,r,icon,elements
+      var planet = getObject(dt, json[key]);
+      dat.body = planet;
+      
+      if (has(json[key], "trajectory")) {
         //track: [x,y,z]
-        if (cfg.planets.trajectory && has(json[key], "trajectory"))
-          tracks.push(getOrbit(dt, json[key]));
-      }
-      
-      if (cfg.planets.trajectory) {
-        tdata = translate_tracks(tracks);
+        var track = getOrbit(dt, json[key]);
+        var mat = new THREE.LineBasicMaterial({
+          color: 0xffffff,
+          vertexColors: THREE.VertexColors,
+          transparent: true,
+          opacity: 0.6,
+          fog: true
+        });
 
-        tr = helio.selectAll(".tracks").data(tdata)
-          .enter().append("path")
-          .attr("class", "dot")            
-          .attr("d", line); 
-      } 
-      
-      pl = helio.selectAll(".planets").data(planets);
-      
-      if (cfg.planets.image) {
-        pl.enter().append("image")
-          .attr("xlink:href", function(d) { return "img/" + d.icon; } )
-          .attr("transform", translate)
-          .attr("class", "planet")
-          .attr("width", function(d) { return d.name == "Saturn" ? d.r*2.7 : d.r; } )
-          .attr("height", function(d) { return d.r; } );
-      } else {
-        pl.enter().append("path")
-          .attr("transform", translate)
-          .attr("class", "planet")
-          .attr("d", d3.svg.symbol().size( function(d) { return d.r; } ));        
+        var line = new THREE.Line(track, mat);
+        scene.add(line);
+        dat.track = line;
       }
-    });
-     
-  }
-  
-  //Display Small bodies as dots
-  if (cfg.sbos.show) { 
-    d3.json('data/sbo.json', function(error, json) {
-      if (error) return console.log(error);
-      
-      for (var key in json) {
-        if (!has(json, key)) continue;
-        //sbos: pos[x,y,z],name,r
-        if (json[key].H < 11)
-          sbos.push(getObject(dt, json[key]));
+      var mesh = Planets.create(key);
+      if (!mesh) {
+        mesh = new THREE.Mesh(new THREE.SphereGeometry(0.02, 32, 32), new THREE.MeshPhongMaterial({color: "#fff"})); 
       }
-      //console.log(objects);
-      
-      sb = helio.selectAll(".sbos").data(sbos)
-        .enter().append("path")
-        .attr("transform", translate)
-        .attr("class", "sbo")
-        .attr("d", d3.svg.symbol().size( function(d) { return d.r; } ));
+      mesh.position.fromArray(planet.pos);
+      scene.add(mesh);
+      dat.mesh = mesh;
+    }
 
-    });
-  }
-  
-  //Display spacecraft with images (opt. text/trajectory)
-  if (cfg.spacecraft.show) { 
-    d3.json('data/probes.json', function(error, json) {
-      if (error) return console.log(error);
-      
-      for (var key in json) {
-        if (!has(json, key)) continue;
-        //object: pos[x,y,z],name,r,icon
-        var pr = getObject(dt, json[key]);
-        if (pr) probes.push(pr);
-      }
     
-      //trajectory
-      /*if (cfg.spacecraft.trajectory) { 
-
-      } */     
-      
-      //image or dot
-      sc = helio.selectAll(".probes").data(probes);
+ 
         
-      if (cfg.spacecraft.image) { 
-        sc.enter().append("image")
-          .attr("xlink:href", function(d) { return "img/" + d.icon; } )
-          .attr("transform", translate)
-          .attr("class", "sc")
-          .attr("width", function(d) { return d.r; }  )
-          .attr("height", function(d) { return d.r; }  );
-      } else {
-        sc.enter().append("path")
-          .attr("transform", translate)
-          .attr("class", "sc")
-          .attr("d", d3.svg.symbol().size( function(d) { return d.r; } ));        
-      }
-    });
+    //container.selectAll(".planets").data(planets)
+    //  .enter().append("path")
+    //  .attr("class", "planet");
     
-  }
+  });
+
+  //Display Small bodies as dots
+  d3.json('data/sbo.json', function(error, json) {
+    if (error) return console.log(error);
+    
+   var map = loader.load("images/ast.png");
+   //12 diff sizes
+   var mat = [], geo = [], basesize = 0.006;
+   for (var i=1; i<=12; i++) {
+     geo.push(new THREE.Geometry());
+     mat.push(new THREE.PointsMaterial({
+       color:0xffffff, 
+       map: map,
+       blending: THREE.AdditiveBlending,
+       size: basesize * i,
+       transparent: true,
+       fog: true
+     }));
+   }
+   for (var key in json) {
+      if (!has(json, key)) continue;
+      var dat = {};
+      //sbos: pos[x,y,z],name,r
+      //if (!isNumber(json[key].H)) { console.log(key); continue; }
+      var sbo = getObject(dt, json[key]);
+      var vec = new THREE.Vector3();
+      vec.fromArray(sbo.pos);
+      var index = Math.floor(sbo.r);
+      if (index > 12) index = 12;
+      geo[index-1].vertices.push(vec);
+    }
+    for (i=0; i<12; i++) {
+      scene.add(new THREE.Points(geo[i], mat[i]));
+    }
+  });
   
-  d3.select(window).on('resize', resize);
+  // render the scene
+  renderFcts.push(function(){
+    //meshes.forEach( function(d, i) { d.rotateOnAxis( new THREE.Vector3( 0, 1, 0 ), rot[i]); })
+    var p = camera.position;
+    scene.fog.density = 0.05 / Math.pow(p.x*p.x + p.y*p.y + p.z*p.z, 0.5);
+    renderer.render(scene, camera);  
+  });
+  
+  init();
 };
 
-function resize() {
-  if (cfg.width && cfg.width > 0) return;
-  width = parNode ? parNode.clientWidth : window.innerWidth;
-  height = parNode ? parNode.clientHeight : window.innerHeight;
-  svg.attr("width", width).attr("height", height);
-  helio.attr("transform", "translate(" + width/2 + "," + height/2 + ")");
 
-  redraw();
-}
+// handle window resize
+window.addEventListener('resize', function(){
+  renderer.setSize(width, height);
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+}, false);
 
-//Projected trajectory from [x,y,z] vector array
-function translate_tracks(tracks) {
-  var res = [];
-  
-  tracks.forEach( function(track) {
-    var t = [];
-    for (var i=0; i<track.length; i++) {
-      var p = vMultiply(rmatrix, track[i]);
-      p[0] *= scale; p[2] *= scale;  
-      t.push([p[0],-p[2]]);
-    }
-    res.push(t);
+ 
+// run the rendering loop
+var lastTimeMsec = null;
+function init() {
+  requestAnimationFrame(function animate(nowMsec) {
+    // keep looping
+    requestAnimationFrame(animate);
+    // measure time
+    lastTimeMsec = lastTimeMsec || nowMsec-1000/60;
+    var deltaMsec = Math.min(200, nowMsec - lastTimeMsec);
+    lastTimeMsec = nowMsec;
+    // call each update function
+    renderFcts.forEach(function(renderFct) {
+      renderFct(deltaMsec/1000, nowMsec/1000);
+    });
   });
-  return res;
-}
-
-//Projected position from [x,y,z] vector
-function translate(d) {
-  var p = vMultiply(rmatrix, d.pos),
-      off = d.r / 2,
-      offx = d.name == "Saturn" ? d.r*1.35 : off;
-  p[0] *= scale;  
-  p[2] *= scale;  
-  if (off) {
-    p[0] -= offx;
-    p[2] += off;
-  }
-  return "translate(" + p[0] + "," + -p[2] + ")";
-}
-
-function redraw() {
-  //d3.event.preventDefault();
-  scale = zoom.scale();  
-  if (d3.event && d3.event.sourceEvent.type !== "wheel") {
-    var trans = zoom.translate();
-    angle = [30-z(trans[1]), 0, 90+x(trans[0])];
-    rmatrix = getRotation(angle);
-  }
-  //console.log(d3.event.sourceEvent.type);
-  //console.log(x(trans[0]) + ", " + y(trans[1]));
-
-  var rsun = Math.pow(scale, 0.8);
-  sun.attr({"x": -rsun/2, "y": -rsun/2, "width": rsun, "height": rsun});
-  
-  pl.attr("transform", translate);
-
-  tdata = translate_tracks(tracks);
-  tr.data(tdata).attr("d", line);
-  
-  sb.attr("transform", translate);
-  if (sc) sc.attr("transform", translate);
 }
 
 Orrery.display = display;
-Orrery.update = update;this.Orrery = Orrery;
+this.Orrery = Orrery;
 })();

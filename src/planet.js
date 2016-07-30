@@ -1,3 +1,4 @@
+/* global THREE, deg2rad */
 var Planets = Planets || {};
 
 Planets.baseURL = 'images/';
@@ -22,7 +23,7 @@ Planets.params = {
   "nep": {map: "neptunemap.jpg", radius: 1.0, tilt: 29.56, rot: 0.671, 
              ring: {map: "neptunerings.gif", radius: 2.5, opacity: 0.8} },
   "plu": {map: "plutomap.jpg", radius: 0.2, tilt: 122.53, rot: 6.387}  
-}
+};
 
 Planets.create = function(body, param) {
   if (!Planets.params.hasOwnProperty(body)) {
@@ -48,20 +49,20 @@ Planets.create = function(body, param) {
   var mesh = new THREE.Mesh(geometry, material);
   
   if (p.hasOwnProperty("ring")) {
-    mesh.receiveShadow	= true
-    mesh.castShadow = true
+    mesh.receiveShadow	= true;
+    mesh.castShadow = true;
     var ring = Planets.createRing(body);
-    ring.receiveShadow	= true
-    ring.castShadow = true
+    ring.receiveShadow	= true;
+    ring.castShadow = true;
     mesh.add(ring);
-  };
+  }
   /*if (body === "earth") {
     var cloud = Planets.createEarthCloud();
     mesh.add(cloud);
   }*/
   mesh.rotation.set(0, 0, p.tilt * deg2rad);  
   return mesh;
-}
+};
   
   
 Planets.createRing = function(body) {
@@ -106,7 +107,7 @@ Planets.createRing = function(body) {
       // update texture with result
       ctx.putImageData(dataResult,0,0);
       material.map.needsUpdate = true;
-    })
+    });
     imageTrans.src = map;
   }, false);
   imageMap.src = map;
@@ -163,9 +164,9 @@ Planets.createEarthCloud = function() {
         }
       }
       // update texture with result
-      contextResult.putImageData(dataResult,0,0)  
+      contextResult.putImageData(dataResult,0,0);
       material.map.needsUpdate = true;
-    })
+    });
     imageTrans.src = Planets.baseURL + 'earthcloudmaptrans.jpg';
   }, false);
   imageMap.src = Planets.baseURL + 'earthcloudmap.jpg';
@@ -179,7 +180,7 @@ Planets.createEarthCloud = function() {
   });
   var mesh = new THREE.Mesh(geometry, material);
   return mesh;
-}
+};
 
 
 Planets._RingGeometry = function(innerRadius, outerRadius, thetaSegments) {
@@ -215,23 +216,23 @@ Planets._RingGeometry = function(innerRadius, outerRadius, thetaSegments) {
 
     var uv = new THREE.Vector2(0, 0);
     uvs.push(uv);
-    var uv = new THREE.Vector2(1, 0);
+    uv = new THREE.Vector2(1, 0);
     uvs.push(uv);
-    var uv = new THREE.Vector2(0, 1);
+    uv = new THREE.Vector2(0, 1);
     uvs.push(uv);
 
     this.faces.push(face);
     this.faceVertexUvs[0].push(uvs);
 
     // Create the second triangle
-    var face = new THREE.Face3(vertexIdx + 2, vertexIdx + 1, vertexIdx + 3, normal);
-    var uvs = [];
+    face = new THREE.Face3(vertexIdx + 2, vertexIdx + 1, vertexIdx + 3, normal);
+    uvs = [];
 
-    var uv = new THREE.Vector2(0, 1);
+    uv = new THREE.Vector2(0, 1);
     uvs.push(uv);
-    var uv = new THREE.Vector2(1, 0);
+    uv = new THREE.Vector2(1, 0);
     uvs.push(uv);
-    var uv = new THREE.Vector2(1, 1);
+    uv = new THREE.Vector2(1, 1);
     uvs.push(uv);
 
     this.faces.push(face);

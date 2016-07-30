@@ -52,7 +52,7 @@ target.build = function() {
   */
   echo('Copying files');
 
-  var data = JSON.parse(cat('./data/planets.json'));
+/*  var data = JSON.parse(cat('./data/planets.json'));
 
   for (key in data) {
     if (data[key].hasOwnProperty('icon'))
@@ -67,15 +67,16 @@ target.build = function() {
       cp('-f', planetpath + data[key].icon, 'img');
   }
   
-  
+  */
   var data = JSON.parse(cat('./data/probes.json'));
 
   for (key in data) {
     if (data[key].hasOwnProperty('icon'))
-      cp('-f', probepath + data[key].icon, 'img');
+      cp('-f', probepath + data[key].icon, 'images');
   }
 
   var file = cat([
+    './src/planet.js', 
     './src/matrix.js', 
     './src/util.js',
     './src/transform.js', 
@@ -106,7 +107,7 @@ target.build = function() {
 
   // zip data + prod. code + css
   tar.pack('./', {
-       entries: ['viewer.html', 'style.css', 'readme.md', 'LICENSE', 'orrery.min.js', 'data', 'img', 'lib/d3.min.js'] 
+       entries: ['viewer.html', 'style.css', 'readme.md', 'LICENSE', 'orrery.min.js', 'data', 'images', 'lib'] 
      })
      .pipe(zlib.createGzip())
      .pipe(fs.createWriteStream(filename + '.tar.gz'))
