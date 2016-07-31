@@ -52,17 +52,6 @@ var display = function(config, date) {
   var mesh = Planets.create("sol");
   scene.add(mesh);
 
-	var glowMat = new THREE.SpriteMaterial({ 
-		map: loader.load( 'images/corona.jpg' ), 
-		useScreenCoordinates: false, 
-		color: 0xffff33, 
-    transparent: false, 
-    blending: THREE.AdditiveBlending
-	});
-	var glow = new THREE.Sprite(glowMat);
-	glow.scale.multiplyScalar(0.4);
-	mesh.add(glow);
-
 
   //Display planets with image and orbital track
   d3.json('data/planets.json', function(error, json) {
