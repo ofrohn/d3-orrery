@@ -3,7 +3,7 @@
 
 THREEx.Planets = {};
 
-THREEx.Planets.baseURL = "images/";
+THREEx.Planets.baseURL = "maps/";
 
 // maps from http://planetpixelemporium.com/ and others (see readme)
 
@@ -143,6 +143,7 @@ THREEx.Planets.createClouds = function(body) {
 // Solar corona, based on Lee Stemkoski's https://github.com/stemkoski/stemkoski.github.com/blob/master/Three.js/Simple-Glow.html
 THREEx.Planets.createCorona = function() {
   var p = THREEx.Planets.params.sol, map = THREEx.Planets.baseURL + p.corona.map;
+
   var material = new THREE.SpriteMaterial({ 
     map: new THREE.TextureLoader().load(map), 
     color: 0xffff33, 
@@ -1957,7 +1958,7 @@ var display = function(config, date) {
   d3.json('data/sbo.json', function(error, json) {
     if (error) return console.log(error);
     
-   var map = new THREE.TextureLoader().load("images/ast.png");
+   var map = new THREE.TextureLoader().load("maps/ast.png");
    //12 diff sizes
    var mat = [], geo = [], basesize = 0.006;
    for (var i=1; i<=12; i++) {

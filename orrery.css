@@ -1,5 +1,7 @@
 /* Copyright 2015 Olaf Frohn https://github.com/ofrohn, see LICENSE */
 body { margin:0; padding:0; overflow: hidden }
+#map { cursor:hand; cursor:grab; cursor:-moz-grab; cursor:-webkit-grab; }
+#map:active { cursor:move; cursor: grabbing; cursor: -moz-grabbing; cursor: -webkit-grabbing; }
 #map { width:100%; height:100%; background: #000;  }
 
 .sun { stroke : #ff0; fill : #ff0; }

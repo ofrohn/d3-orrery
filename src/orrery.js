@@ -101,7 +101,7 @@ var display = function(config, date) {
   d3.json('data/sbo.json', function(error, json) {
     if (error) return console.log(error);
     
-   var map = new THREE.TextureLoader().load("images/ast.png");
+   var map = new THREE.TextureLoader().load("maps/ast.png");
    //12 diff sizes
    var mat = [], geo = [], basesize = 0.006;
    for (var i=1; i<=12; i++) {
