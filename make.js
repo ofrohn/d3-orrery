@@ -76,7 +76,8 @@ target.build = function() {
   }
 
   var file = cat([
-    './src/planet.js', 
+    './lib/threex.planets.js', 
+    './lib/OrbitControls.js', 
     './src/matrix.js', 
     './src/util.js',
     './src/transform.js', 
@@ -107,7 +108,7 @@ target.build = function() {
 
   // zip data + prod. code + css
   tar.pack('./', {
-       entries: ['viewer.html', 'style.css', 'readme.md', 'LICENSE', 'orrery.min.js', 'data', 'images', 'lib'] 
+       entries: ['viewer.html', 'style.css', 'readme.md', 'LICENSE', 'orrery.js', 'orrery.min.js', 'data', 'images', 'lib/d3.min.js', 'lib/three.min.js'] 
      })
      .pipe(zlib.createGzip())
      .pipe(fs.createWriteStream(filename + '.tar.gz'))

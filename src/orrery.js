@@ -1,4 +1,4 @@
-/* global THREE, Planets, loader, getObject, updateObject, getOrbit, has, settings, $, px */
+/* global THREE, THREEx, loader, getObject, updateObject, getOrbit, has, settings, $, px */
 var Orrery = {
   version: '0.4'
 };
@@ -49,7 +49,7 @@ var display = function(config, date) {
 
   container = d3.select(parID).append("container");
   
-  var mesh = Planets.create("sol");
+  var mesh = THREEx.Planets.create("sol");
   scene.add(mesh);
 
 
@@ -79,7 +79,7 @@ var display = function(config, date) {
         scene.add(line);
         dat.track = line;
       }
-      var mesh = Planets.create(key);
+      var mesh = THREEx.Planets.create(key);
       if (!mesh) {
         mesh = new THREE.Mesh(new THREE.SphereGeometry(0.02, 32, 32), new THREE.MeshPhongMaterial({color: "#fff"})); 
       }
@@ -101,7 +101,7 @@ var display = function(config, date) {
   d3.json('data/sbo.json', function(error, json) {
     if (error) return console.log(error);
     
-   var map = loader.load("images/ast.png");
+   var map = new THREE.TextureLoader().load("images/ast.png");
    //12 diff sizes
    var mat = [], geo = [], basesize = 0.006;
    for (var i=1; i<=12; i++) {
