@@ -1,10 +1,11 @@
-/* global THREE, THREEx, loader, getObject, updateObject, getOrbit, has, settings, $, px */
+/* global THREE, THREEx, loader, getObject, updateObject, getOrbit, datetimepicker, has, settings, $, px */
 var Orrery = {
   version: '0.4'
 };
 
 var container, parNode, renderer, scene, camera,
     width, height, cfg,
+    sbomeshes = [],
     renderFcts= [];
 
 var display = function(config, date) {
@@ -15,7 +16,7 @@ var display = function(config, date) {
 
   parNode = $(cfg.container);
   if (parNode) { 
-    parID = "#"+cfg.container;
+    parID = "#" + cfg.container;
     var stl = window.getComputedStyle(parNode, null);
     if (!parseInt(stl.width) && !cfg.width) parNode.style.width = px(window.innerWidth);    
     if (!parseInt(stl.height) && !cfg.height) parNode.style.height = px(window.innerHeight);    
@@ -28,41 +29,50 @@ var display = function(config, date) {
   width = parNode ? parNode.clientWidth : window.innerWidth;
   height = parNode ? parNode.clientHeight : window.innerHeight;
 
+  // store all dynamic bodies
+  container = d3.select(parID).append("container");
+
   // init renderer
   renderer = new THREE.WebGLRenderer({antialias : true});
   renderer.setClearColor("#000");
   renderer.setSize( width, height );
+  renderer.setPixelRatio( window.devicePixelRatio );
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.BasicShadowMap;
+  
   parNode.appendChild(renderer.domElement );
-  //renderer.shadowMapEnabled  = true;
   
   scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x000000, 0.00025);
   
-
   camera = new THREE.PerspectiveCamera(45, width/height, 0.01, 10000);
   camera.position.z = 3.5;
   camera.position.y = 2;
   var controls = new THREE.OrbitControls(camera);
 
-  var light = new THREE.AmbientLight(0xffffff);
-  scene.add(light);
+  scene.add(new THREE.AmbientLight( 0x333333 ));
 
-  container = d3.select(parID).append("container");
+  var light = new THREE.PointLight( 0xffffff, 1, 0 );
+  light.castShadow = true;
+  //light.shadow.bias = 0.01;
   
   var mesh = THREEx.Planets.create("sol");
-  scene.add(mesh);
+  light.add(mesh);
+  scene.add(light);
 
 
-  //Display planets with image and orbital track
+  //Display planets with texture and orbital track
   d3.json('data/planets.json', function(error, json) {
     if (error) return console.log(error);
-          
+    
+    var data = [];
+    
     for (var key in json) {
       if (!has(json, key)) continue;
-      var dat = {};
+      var datum = {id: key};
       //object: pos[x,y,z],name,r,icon,elements
       var planet = getObject(dt, json[key]);
-      dat.body = planet;
+      datum.body = planet;
       
       if (has(json[key], "trajectory")) {
         //track: [x,y,z]
@@ -77,7 +87,7 @@ var display = function(config, date) {
 
         var line = new THREE.Line(track, mat);
         scene.add(line);
-        dat.track = line;
+        datum.track = line;
       }
       var mesh = THREEx.Planets.create(key);
       if (!mesh) {
@@ -85,67 +95,111 @@ var display = function(config, date) {
       }
       mesh.position.fromArray(planet.pos);
       scene.add(mesh);
-      dat.mesh = mesh;
+      
+      datum.mesh = mesh;
+      data.push(datum);
     }
-
-    
- 
-        
-    //container.selectAll(".planets").data(planets)
-    //  .enter().append("path")
-    //  .attr("class", "planet");
-    
+    container.selectAll(".planets").data(data)
+      .enter().append("path")
+      .attr("class", "planet");
   });
 
   //Display Small bodies as dots
   d3.json('data/sbo.json', function(error, json) {
     if (error) return console.log(error);
+
+    var data = [];
     
-   var map = new THREE.TextureLoader().load("maps/ast.png");
-   //12 diff sizes
-   var mat = [], geo = [], basesize = 0.006;
-   for (var i=1; i<=12; i++) {
+    var map = new THREE.TextureLoader().load("maps/circle.png");
+    var geo= [], mat = [], basesize = 0.006;
+    //12 discrete sizes
+    for (var i=1; i<=12; i++) {
      geo.push(new THREE.Geometry());
      mat.push(new THREE.PointsMaterial({
-       color:0xffffff, 
+       color:0xcc9999, 
        map: map,
-       blending: THREE.AdditiveBlending,
+       //blending: THREE.AdditiveBlending,
        size: basesize * i,
        transparent: true,
        fog: true
      }));
    }
+   
    for (var key in json) {
       if (!has(json, key)) continue;
-      var dat = {};
+      var datum = {};
       //sbos: pos[x,y,z],name,r
       //if (!isNumber(json[key].H)) { console.log(key); continue; }
       var sbo = getObject(dt, json[key]);
+      datum.body = sbo;
       var vec = new THREE.Vector3();
       vec.fromArray(sbo.pos);
       var index = Math.floor(sbo.r);
       if (index > 12) index = 12;
       geo[index-1].vertices.push(vec);
+      datum.size = index;
+      datum.vertex = geo[index-1].vertices.length - 1;
+      data.push(datum);
     }
     for (i=0; i<12; i++) {
-      scene.add(new THREE.Points(geo[i], mat[i]));
+      sbomeshes[i] = new THREE.Points(geo[i], mat[i]);
+      scene.add(sbomeshes[i]);
     }
+    container.selectAll(".sbos").data(data)
+      .enter().append("path")
+      .attr("class", "sbo");
   });
   
   // render the scene
   renderFcts.push(function(){
     //meshes.forEach( function(d, i) { d.rotateOnAxis( new THREE.Vector3( 0, 1, 0 ), rot[i]); })
+    
     var p = camera.position;
     scene.fog.density = 0.05 / Math.pow(p.x*p.x + p.y*p.y + p.z*p.z, 0.5);
     renderer.render(scene, camera);  
   });
   
+  if (cfg.date === true) {
+    var pick = datetimepicker({callback: function(date, tz) {
+      dt.setTime(date.valueOf());
+      d3.select("#datetime").html(pick.date());
+      Orrery.update(dt);
+    }, target: "#datetime", time: false, dateselect: true, startofweek: 0});
+
+    d3.select(parID).append("div").attr("id", "datetime").html( pick.date() ).on("click", function() { pick(dt); });
+        
+  }
+  
   init();
 };
 
 
+var update = function(dt) {
+  container.selectAll(".planet").each(function(d) { 
+    var pos = updateObject(dt, d.body);
+    if (!pos) return;
+    d.body.pos = pos;
+    d.mesh.position.fromArray(pos);
+  });
+    
+  container.selectAll(".sbo").each(function(d) { 
+    var pos = updateObject(dt, d.body);
+    d.body.pos = pos;
+    
+    sbomeshes[d.size-1].geometry.vertices[d.vertex].fromArray(pos);
+   
+    //d.mesh.position.fromArray(pos);
+  });
+  sbomeshes.forEach( function(d) { d.geometry.verticesNeedUpdate = true; });
+  
+};
+
 // handle window resize
 window.addEventListener('resize', function(){
+  var stl = window.getComputedStyle(parNode, null);
+  width = parseInt(stl.width);
+  height = parseInt(stl.height);
+  
   renderer.setSize(width, height);
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
@@ -170,3 +224,9 @@ function init() {
 }
 
 Orrery.display = display;
+Orrery.update = update;
+Orrery.animate = function(dt) {
+  update(dt);
+  dt.setDate(dt.getDate() + 1);  
+  setTimeout(Orrery.animate, 100,  dt);
+};

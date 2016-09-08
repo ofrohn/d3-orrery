@@ -78,7 +78,7 @@ target.build = function() {
   var file = cat([
     './lib/threex.planets.js', 
     './lib/OrbitControls.js', 
-    './src/matrix.js', 
+    './src/datetimepicker.js', 
     './src/util.js',
     './src/transform.js', 
     './src/get.js',

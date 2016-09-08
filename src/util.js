@@ -11,6 +11,20 @@ function isArray(o) { return Object.prototype.toString.call(o) === "[object Arra
 function isObject(o) { var type = typeof o;  return type === 'function' || type === 'object' && !!o; }
 function isFunction(o) { return typeof o == 'function' || false; }
 
+
+function findPos(o) {
+  var l = 0, t = 0, w = o.offsetWidth, h = o.offsetHeight;
+  
+  if (o.offsetParent) {
+    do {
+      l += o.offsetLeft;
+      t += o.offsetTop;
+    } while ((o = o.offsetParent) !== null);
+  }
+  return {"l":l, "t":t, "w":w, "h":h};
+}
+
+
 function dist(p1, p2){
   var θ1 = p1.θ * deg2rad, ϕ1 = p1.ϕ * deg2rad,
       θ2 = p2.θ * deg2rad, ϕ2 = p2.ϕ * deg2rad;
@@ -18,18 +32,7 @@ function dist(p1, p2){
   return Math.sqrt(p1.r*p1.r + p2.r*p2.r - 2*p1.r*p2.r * (Math.sin(θ1) * Math.sin(θ2) * Math.cos(ϕ1-ϕ2) + Math.cos(θ1) * Math.cos(θ2)));
 }
 
-
-function attach(node, event, func) {
-  if (node.addEventListener) node.addEventListener(event, func, false);
-  else node.attachEvent("on" + event, func); 
-}
-
-function stopPropagation(e) {
-  if (typeof e.stopPropagation != "undefined") e.stopPropagation();
-  else e.cancelBubble = true;
-}
-
-function dtParse(s) {
+function dateParse(s) {
   if (!s) return; 
   var t = s.split(".");
   if (t.length < 1) return; 
@@ -42,7 +45,7 @@ function dtParse(s) {
   return new Date(t[0], t[1]-1, t[2]);
 }
 
-function dtAdd(dt, val, type) {
+function dateAdd(dt, val, type) {
   var t, ldt = dt.valueOf();
   if (!val) return new Date(ldt); 
   t = type || "d";
@@ -59,28 +62,26 @@ function dtAdd(dt, val, type) {
 }
 
 
-function dtDiff(dt1, dt2, type) {
-  var ldt, t, con;
+function dateDiff(dt1, dt2, type) {
   if (!dt2 || !dt1) return; 
-  ldt = dt2.valueOf() - dt1.valueOf();
-  t = type || "d";
-  switch (t) {
-    case 'y': case 'yr': ldt /= 31556926080; break;
-    case 'm': case 'mo': ldt /= 2629800000; break;
-    case 'd': case 'dy': ldt /= 86400000; break;
-    case 'h': case 'hr': ldt /= 3600000; break;
-    case 'n': case 'mn': ldt /= 60000; break;
-    case 's': case 'sec': ldt /= 1000; break;
+  var diff = dt2.valueOf() - dt1.valueOf(),
+      tp = type || "d";
+  switch (tp) {
+    case 'y': case 'yr': diff /= 31556926080; break;
+    case 'm': case 'mo': diff /= 2629800000; break;
+    case 'd': case 'dy': diff /= 86400000; break;
+    case 'h': case 'hr': diff /= 3600000; break;
+    case 'n': case 'mn': diff /= 60000; break;
+    case 's': case 'sec': diff /= 1000; break;
     case 'ms': break;
   }
-  return ldt;
-  //return Math.floor(ldt);
+  if (type) return Math.floor(diff);
+  return diff;
 }
 
-function dtFrac(dt) {
+function dateFrac(dt) {
   return (dt.getHours() + dt.getTimezoneOffset()/60.0 + dt.getMinutes()/60.0 + dt.getSeconds()/3600.0) / 24;
 }
-
 
 var Trig = {
   sinh: function (val) { return (Math.pow(Math.E, val)-Math.pow(Math.E, -val))/2; },

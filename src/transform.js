@@ -1,4 +1,4 @@
-/* global Trig, dtParse, dtFrac, has */
+/* global Trig, dateParse, dateFrac, has */
 var gm = Math.pow(0.01720209895, 2);
 
 var transform = function(item, date, gmass) {
@@ -29,12 +29,12 @@ var transform = function(item, date, gmass) {
 
   if (date) {
     if (date instanceof Date) { dt = date; }
-    else { dt = dtParse(date); }
+    else { dt = dateParse(date); }
   }
   if (!dt) { dt = new Date(); }
   dat.jd = JD(dt);
     
-  dt = dtParse(item.ep);
+  dt = dateParse(item.ep);
   dat.jd0 = JD(dt);
   dat.d = dat.jd - dat.jd0;
   dat.cy = dat.d / 36525;
@@ -232,7 +232,7 @@ function JD(dt) {
     var yr = dt.getUTCFullYear(),
         mo = dt.getUTCMonth() + 1,
         dy = dt.getUTCDate(),
-        frac = dtFrac(dt),
+        frac = dateFrac(dt),
         j = 0, ly = 0, my, ypmy, djm, djm0 = 2400000.5,
         IYMIN = -4799,         /* Earliest year allowed (4800BC) */
         mtab = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];   /* Month lengths in days */

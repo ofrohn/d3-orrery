@@ -3,9 +3,11 @@
 var settings = {
   width: 0,            // Default width; 0 = full width of parent
   height: 0,           // Default height; 0 = full height of parent
-  container: "map",    // ID of parent element, e.g. div
+  date: true,
+  dateformat: "%Y-%m-%d",
+  container: "orrery-map",    // ID of parent element, e.g. div
   datapath: "data/",   // Path/URL to data files, empty = subfolder 'data'
-  imagepath: "img/",   // Path/URL to image files, empty = subfolder 'img'
+  imagepath: "images/",   // Path/URL to image files, empty = subfolder 'img'
   planets: {          
     show: true,        // Show planets, data in planets.json
     image: true,       // With image representation, if dataset contains icon parameter
@@ -15,7 +17,7 @@ var settings = {
   sbos: {
     show: true,        // Show small body objects, data in sbo.json
     image: false,      // With image representation, if dataset contains 'icon' parameter
-    text: true,        // Show object name, if dataset contains 'designator' parameter
+    text: true,        // Show object name, if dataset contains 'designation' parameter
     trajectory: false, // Show orbital path as line 
     size: null         // Constant size or function
   },

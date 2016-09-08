@@ -94,14 +94,19 @@ THREEx.Planets.create = function(body, skipextras) {
 
   if (p.hasOwnProperty("bump")) {
     arg.bumpMap = loader.load(THREEx.Planets.baseURL + p.bump);  
-    arg.bumpScale = 0.02;
+    arg.bumpScale = 0.001;
   }  
   if (p.hasOwnProperty("spec")) {
     arg.specularMap = loader.load(THREEx.Planets.baseURL + p.spec);  
-    arg.specular = new THREE.Color("#333");
   }
+  arg.specular = new THREE.Color( 0x333333 );
+  arg.shininess = 0.1;
   
-  var material = new THREE.MeshPhongMaterial(arg);
+  if (body === "sol") { //ommmmmmm
+    var material = new THREE.MeshBasicMaterial(arg);
+  } else {
+    var material = new THREE.MeshPhongMaterial(arg);
+  }
   var mesh = new THREE.Mesh(geometry, material);
   
   if (!skipextras && p.hasOwnProperty("ring")) {
@@ -1351,55 +1356,320 @@ Object.defineProperties( THREE.OrbitControls.prototype, {
 
 } );
 
-//Matrix calculations
 
-//Multiply 3x3 matrix with 3d-vector
-var vMultiply = function(m, v) {
-  var res = []; 
+var datetimepicker = function(options) {
+  //options: id:string, target:string, format:string (d3.time.format), time:bool,  timezone:bool, weekdays: bool, dateselect: bool, startofweek: bool, vanishonpick: bool, position:[left, top], callback: function
   
-  for (var i=0; i < 3; i++) {
-    var sum = 0;
-    for (var k=0; k < 3; k++) {
-      sum += m[i][k] * v[k];
-    }
-    res[i] = sum;
-  }
-  return res;  
-};
+  var cfg = options || {},
+      date = new Date(), 
+      timezone = date.getTimezoneOffset(),
+      tzFormat = d3.time.format("%Z"),
+      tz = [{"−12:00":720}, {"−11:00":660}, {"−10:00":600}, {"−09:30":570}, {"−09:00":540}, {"−08:00":480}, {"−07:00":420}, {"−06:00":360}, {"−05:00":300}, {"−04:30":270}, {"−04:00":240}, {"−03:30":210}, {"−03:00":180}, {"−02:00":120}, {"−01:00":60}, {"±00:00":0}, {"+01:00":-60}, {"+02:00":-120}, {"+03:00":-180}, {"+03:30":-210}, {"+04:00":-240}, {"+04:30":-270}, {"+05:00":-300}, {"+05:30":-330}, {"+05:45":-345}, {"+06:00":-360}, {"+06:30":-390}, {"+07:00":-420}, {"+08:00":-480}, {"+08:30":-510}, {"+08:45":-525}, {"+09:00":-540}, {"+09:30":-570}, {"+10:00":-600}, {"+10:30":-630}, {"+11:00":-660}, {"+12:00":-720}, {"+12:45":-765}, {"+13:00":-780}, {"+14:00":-840}],
+      months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+      days = ["Su", "M", "Tu", "W", "Th", "F", "Sa"],
+      dateFormat,
+      years = getYears(date),
+      target = cfg.target || "", 
+      id = cfg.id || "datetimepicker", 
+      showtime = cfg.hasOwnProperty("time") ? cfg.time : true,
+      showtimezone = cfg.hasOwnProperty("timezone") ? cfg.timezone : true,
+      showweekdays = cfg.hasOwnProperty("weekdays") ? cfg.weekdays : true,
+      showdateselect = cfg.hasOwnProperty("dateselect") ? cfg.dateselect : true,
+      startofweek = cfg.hasOwnProperty("startofweek") ? cfg.startofweek : 0,
+      //pick -> vanish
+      vanishonpick = cfg.hasOwnProperty("vanishonpick") ? cfg.vanishobpick : true,
+      callbackfunc = cfg.callback || null,
+      //position top/bottom  , left/right
+      position = cfg.position || ["left", "top"];
 
-//Multiply two 3x3 matrices
-var mMultiply = function(a, b) {
-  var res = [];
-  
-  for (var i=0; i < 3; i++) {
-    res[i] = [];
-    for (var j=0; j < 3; j++) {
-      var sum = 0;
-      for (var k=0; k < 3; k++) {
-        sum += b[i][k] * a[k][j];
-      }
-      res [i][j] = sum;
-    }
-  }
-  return res;  
-};
-
-var getRotation = function(angle) {
-  //Rotation by z- and x-axis
-  return mMultiply(rMatrix("z", angle[2]), rMatrix("x", angle[0]));
-};
-
-//Get x/y/z-rotation matrix
-var rMatrix = function(axis, θ) {
-   var r = -θ * Math.PI / 180,
-       c = Math.cos(r), s = Math.sin(r);
+  if (cfg.format) dateFormat = d3.time.format(cfg.format);
+  else dateFormat = d3.time.format("%Y-%m-%d");
       
-   switch (axis) {
-     case "x": return [[1,0,0],[0,c,s],[0,-s,c]];
-     case "y": return [[c,0,-s],[0,1,0],[s,0,c]];
-     case "z": return [[c,s,0],[-s,c,0],[0,0,1]];
-   }
+  function dtpicker(dt) {
+    var node = picker.node(),
+        tnode = d3.select(target).node(),
+        pos = getPosition(node, tnode);
+     
+    if (node.offsetTop === -9999) {
+      date.setTime(dt.valueOf());
+      set();
+      picker.style({"top": px(pos[1]), "left": px(pos[0]), "opacity": 1});  
+      d3.select(tnode).classed("active", true);
+    } else {
+      vanish();
+    }    
+  }  
+    
+  //var frag = document.createDocumentFragment();
+  var picker = d3.select("body").append("div").attr("id", id);
+  monthArrow("left");
+  monthSelect();
+  yearSelect();
+  monthArrow("right");
+  daySelect();
+  timeSelect();  
+  
+  function getPosition(node, trgt) {
+    var p = findPos(trgt);
+    var left = position[0] === "left" ? p.l : p.l + p.w - node.offsetWidth;
+    var top = position[1] === "top" ? p.t - node.offsetHeight - 1 : p.t + p.h - 1;
+
+    return [left, top];
+  }
+  
+  function daySelect() {
+    var i, cal = d3.select("#cal"),
+        mo = d3.select("#mon").node().value, yr = d3.select("#yr").node().value,
+        today = new Date(),
+        sow = startofweek;
+        
+    if (!cal.node()) cal = picker.append("div").attr("id", "cal");
+    yr = parseInt(yr); 
+    mo = findMonth(mo);
+    var curdt = new Date(yr, mo, 1);
+    
+    curdt.setDate(curdt.getDate() - curdt.getDay() + sow);
+    var nd = cal.node();
+    while (nd.firstChild) nd.removeChild(nd.firstChild);
+    
+    if (showweekdays === true) {
+      for (i = sow; i < sow + 7; i++) {
+        var day = i > 6 ? i - 7 : i;
+        cal.append("div").classed({"date": true, "weekday": true}).html(days[day]);
+      }
+    }
+    for (i=0; i<42; i++) {
+      var curmon = curdt.getMonth(), curday = curdt.getDay(), curid = dateFormat(curdt);
+      cal.append("div").classed({
+        "date": true, 
+        "grey": curmon !== mo,
+        "weekend": curmon === mo && (curday === 0 || curday === 6),
+        "today": dateDiff(curdt, today, "d") === 0,
+        "selected": dateDiff(curdt, date, "d") === 0
+      }).attr("id", curid)
+      .on("click", pick)
+      .html(curdt.getDate().toString());
+      
+      curdt.setDate(curdt.getDate() + 1);
+    }
+  }
+
+  function yearSelect() { 
+    var year = date.getFullYear();
+
+    if (showdateselect === true) {
+      var sel = picker.append("select").attr("title", "Year").attr("id", "yr").on("change", daySelect).on("keyup", daySelect),
+          selected = 0;
+          
+      sel.selectAll('option').data(years).enter().append('option')
+         .text(function (d, i) { 
+           if (d === year) selected = i; 
+           return d.toString(); 
+         });
+      sel.property("selectedIndex", selected);
+    } else
+      picker.append("input").attr("type", "text").attr("title", "Year").attr("id", "yr").attr("readonly", "readonly").attr("value", year);
+  }
+  
+  function monthSelect() { 
+    var month = date.getMonth();
+    if (showdateselect === true) {
+      var sel = picker.append("select").attr("title", "Month").attr("id", "mon").on("change", daySelect).on("keyup", daySelect),
+          selected = 0;
+      
+      sel.selectAll('option').data(months).enter().append('option')
+         .attr("value", function (d, i) { 
+           if (i === month) selected = i; 
+           return i; 
+         })
+         .text(function (d) { return d; });
+      sel.property("selectedIndex", selected);
+    } else
+      picker.append("input").attr("type", "text").attr("title", "Month").attr("id", "mon").attr("readonly", "readonly").attr("value", months[month]);
+  }
+  
+  function monthArrow(dir) {
+    var lnk = picker.append("div").attr("id", dir).on("click", function() {
+      var mon = d3.select("#mon").node(), yr = d3.select("#yr").node();
+      
+      if (mon.tagName.toLowerCase() === "select") {
+        if (dir === "left") {
+          if (mon.selectedIndex === 0) {
+            mon.selectedIndex = 11; yr.selectedIndex--;
+          } else mon.selectedIndex--;
+        } else {
+          if (mon.selectedIndex === 11) {
+            mon.selectedIndex = 0; yr.selectedIndex++;
+          } else mon.selectedIndex++;
+        }
+      } else {
+        var month = findMonth(mon.value), year = parseInt(yr.value);
+        if (dir === "left") {
+          if (month === 0) { month = 11; year--; }
+          else month--;
+        } else {
+          if (month === 11) { month = 0; year++; }
+          else month++;
+        }
+        mon.value = months[month];
+        yr.value = year;
+      }
+      daySelect();
+    });
+  }
+
+  function timeSelect() { 
+    if (showtime === false) return;
+    picker.append("input").attr("type", "number").attr("id", "hr").attr("title", "Hours").attr("max", "24").attr("min", "-1").attr("step", "1").attr("value", date.getHours()).on("change", function() { if (testNumber(this) === true) pick(); });
+
+    picker.append("input").attr("type", "number").attr("id", "min").attr("title", "Minutes").attr("max", "60").attr("min", "-1").attr("step", "1").attr("value", date.getMinutes()).on("change", function() { if (testNumber(this) === true) pick(); });
+    
+    picker.append("input").attr("type", "number").attr("id", "sec").attr("title", "Seconds").attr("max", "60").attr("min", "-1").attr("step", "1").attr("value", date.getSeconds()).on("change", function() { if (testNumber(this) === true) pick(); });
+    if (showtimezone === true) tzSelect();
+  }
+  
+  function tzSelect() { 
+    var sel = picker.append("select").attr("title", "Time zone offset from UTC").attr("id", "tz").on("change", pick),
+        selected = 15;
+    timezone = date.getTimezoneOffset();
+    sel.selectAll('option').data(tz).enter().append('option')
+       .attr("value", function (d, i) { 
+         var k = Object.keys(d)[0];
+         if (d[k] === timezone) selected = i; 
+         return d[k]; 
+       })
+       .text(function (d) { return Object.keys(d)[0]; });
+    sel.property("selectedIndex", selected);
+  }
+  
+  function getYears(dt) {
+    var y0 = dt.getFullYear(), res = [];
+    for (var i=y0-10; i<=y0+10; i++) res.push(i);
+    return res;
+  }  
+  
+  function select(id, val) {
+    var node = d3.select(id).node();
+    
+    if (node.tagName.toLowerCase() === "select") {
+      for (var i=0; i<node.childNodes.length; i++) {
+        if (node.childNodes[i].value == val) {
+          node.selectedIndex = i;
+          break;
+        }
+      }
+    } else {
+      if (node.id === "mon") node.value = months[val];
+      else node.value = val;
+    }
+  }
+  
+  function set() {    
+    select("#yr", date.getFullYear());
+    select("#mon", date.getMonth());
+    daySelect();
+    if (showtime) {
+      d3.select("#hr").node().value = date.getHours();
+      d3.select("#min").node().value = date.getMinutes();
+      d3.select("#sec").node().value = date.getSeconds();
+    }
+  } 
+  
+  this.show = function(dt) {
+  };
+  
+  this.isVisible = function() {
+    return picker.node().offsetTop !== -9999;
+  };
+
+  this.hide = function() {
+    vanish();
+  };
+  
+  function vanish() {
+    picker.style("opacity", 0);
+    d3.select("#error").style( {top:"-9999px", left:"-9999px", opacity:0} ); 
+    d3.select(target).classed("active", false);
+    setTimeout(function() { picker.style("top", px(-9999)); }, 600);    
+  }
+  
+  function pick() {        
+    if (this.id && this.id.search(/^\d/) !== -1) {
+      date = dateFormat.parse(this.id); 
+    }
+    /*
+    var yr = date.getFullYear(), mo = date.getMonth();
+    select("yr", yr);
+    select("mon", mo);
+    daySel();*/
+    if (showtime === true) {
+      var h = d3.select("#hr").node().value, 
+          m = d3.select("#min").node().value,
+          s = d3.select("#sec").node().value;
+      timezone = d3.select("#tz").node().value;
+      date.setHours(h, m, s);
+    }
+    set();
+    
+    if (callbackfunc) callbackfunc(date, timezone);
+    if (vanishonpick === true) vanish();
+  } 
+
+  function findMonth(mon) {
+    for (var i=0; i<months.length; i++) {
+      if (months[i] === mon) return i;
+    }
+  }
+  
+  dtpicker.target = function(_) {
+    if (!arguments.length) return target; 
+    if (_.indexOf("#") !== 0) target = "#" + _;
+    else  target = _;
+    return dtpicker;
+  };
+  
+  dtpicker.dateFormat = function(_) {
+    if (!arguments.length) return dateFormat; 
+    dateFormat = d3.time.format(_);
+    return dtpicker;
+  };
+  
+  dtpicker.callback = function(_) {
+    if (!arguments.length) return callbackfunc; 
+    callbackfunc = _;
+    return dtpicker;
+  };
+
+  dtpicker.date =  function() {
+    return dateFormat(date);
+  };
+  
+  return dtpicker;  
 };
+
+//Check numeric field
+function testNumber(node) {
+  var v, adj = node.id === "hr" || node.id === "min" || node.id === "sec" ? 1 : 0;
+  if (node.validity) {
+    v = node.validity;
+    if (v.typeMismatch || v.badInput) { popError(node, node.title + ": check field value"); return false; }
+    if (v.rangeOverflow || v.rangeUnderflow) { popError(node, node.title + " must be between " + (parseInt(node.min) + adj) + " and " + (parseInt(node.max) - adj)); return false; }
+  } else {
+    v = node.value;
+    if (!isNumber(v)) { popError(node, node.title + ": check field value"); return false; }
+    v = parseFloat(v);
+    if (v < node.min || v > node.max ) { popError(node, node.title + " must be between " + (node.min + adj) + " and " + (+node.max - adj)); return false; }
+  }
+  d3.select("#error").style( {top:"-9999px", left:"-9999px", opacity:0} ); 
+  return true; 
+}
+
+// Error notification
+function popError(nd, err) {
+  var p = findPos(nd);
+  d3.select("#error").html(err).style( {top:px(p[1] + nd.offsetHeight + 1), left:px(p[0]), opacity:1} );
+  nd.focus();
+}
 
 var deg2rad = Math.PI / 180;
 
@@ -1414,6 +1684,20 @@ function isArray(o) { return Object.prototype.toString.call(o) === "[object Arra
 function isObject(o) { var type = typeof o;  return type === 'function' || type === 'object' && !!o; }
 function isFunction(o) { return typeof o == 'function' || false; }
 
+
+function findPos(o) {
+  var l = 0, t = 0, w = o.offsetWidth, h = o.offsetHeight;
+  
+  if (o.offsetParent) {
+    do {
+      l += o.offsetLeft;
+      t += o.offsetTop;
+    } while ((o = o.offsetParent) !== null);
+  }
+  return {"l":l, "t":t, "w":w, "h":h};
+}
+
+
 function dist(p1, p2){
   var θ1 = p1.θ * deg2rad, ϕ1 = p1.ϕ * deg2rad,
       θ2 = p2.θ * deg2rad, ϕ2 = p2.ϕ * deg2rad;
@@ -1421,18 +1705,7 @@ function dist(p1, p2){
   return Math.sqrt(p1.r*p1.r + p2.r*p2.r - 2*p1.r*p2.r * (Math.sin(θ1) * Math.sin(θ2) * Math.cos(ϕ1-ϕ2) + Math.cos(θ1) * Math.cos(θ2)));
 }
 
-
-function attach(node, event, func) {
-  if (node.addEventListener) node.addEventListener(event, func, false);
-  else node.attachEvent("on" + event, func); 
-}
-
-function stopPropagation(e) {
-  if (typeof e.stopPropagation != "undefined") e.stopPropagation();
-  else e.cancelBubble = true;
-}
-
-function dtParse(s) {
+function dateParse(s) {
   if (!s) return; 
   var t = s.split(".");
   if (t.length < 1) return; 
@@ -1445,7 +1718,7 @@ function dtParse(s) {
   return new Date(t[0], t[1]-1, t[2]);
 }
 
-function dtAdd(dt, val, type) {
+function dateAdd(dt, val, type) {
   var t, ldt = dt.valueOf();
   if (!val) return new Date(ldt); 
   t = type || "d";
@@ -1462,28 +1735,26 @@ function dtAdd(dt, val, type) {
 }
 
 
-function dtDiff(dt1, dt2, type) {
-  var ldt, t, con;
+function dateDiff(dt1, dt2, type) {
   if (!dt2 || !dt1) return; 
-  ldt = dt2.valueOf() - dt1.valueOf();
-  t = type || "d";
-  switch (t) {
-    case 'y': case 'yr': ldt /= 31556926080; break;
-    case 'm': case 'mo': ldt /= 2629800000; break;
-    case 'd': case 'dy': ldt /= 86400000; break;
-    case 'h': case 'hr': ldt /= 3600000; break;
-    case 'n': case 'mn': ldt /= 60000; break;
-    case 's': case 'sec': ldt /= 1000; break;
+  var diff = dt2.valueOf() - dt1.valueOf(),
+      tp = type || "d";
+  switch (tp) {
+    case 'y': case 'yr': diff /= 31556926080; break;
+    case 'm': case 'mo': diff /= 2629800000; break;
+    case 'd': case 'dy': diff /= 86400000; break;
+    case 'h': case 'hr': diff /= 3600000; break;
+    case 'n': case 'mn': diff /= 60000; break;
+    case 's': case 'sec': diff /= 1000; break;
     case 'ms': break;
   }
-  return ldt;
-  //return Math.floor(ldt);
+  if (type) return Math.floor(diff);
+  return diff;
 }
 
-function dtFrac(dt) {
+function dateFrac(dt) {
   return (dt.getHours() + dt.getTimezoneOffset()/60.0 + dt.getMinutes()/60.0 + dt.getSeconds()/3600.0) / 24;
 }
-
 
 var Trig = {
   sinh: function (val) { return (Math.pow(Math.E, val)-Math.pow(Math.E, -val))/2; },
@@ -1540,12 +1811,12 @@ var transform = function(item, date, gmass) {
 
   if (date) {
     if (date instanceof Date) { dt = date; }
-    else { dt = dtParse(date); }
+    else { dt = dateParse(date); }
   }
   if (!dt) { dt = new Date(); }
   dat.jd = JD(dt);
     
-  dt = dtParse(item.ep);
+  dt = dateParse(item.ep);
   dat.jd0 = JD(dt);
   dat.d = dat.jd - dat.jd0;
   dat.cy = dat.d / 36525;
@@ -1743,7 +2014,7 @@ function JD(dt) {
     var yr = dt.getUTCFullYear(),
         mo = dt.getUTCMonth() + 1,
         dy = dt.getUTCDate(),
-        frac = dtFrac(dt),
+        frac = dateFrac(dt),
         j = 0, ly = 0, my, ypmy, djm, djm0 = 2400000.5,
         IYMIN = -4799,         /* Earliest year allowed (4800BC) */
         mtab = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];   /* Month lengths in days */
@@ -1784,16 +2055,17 @@ var getObject = function(dt, d) {
   return res;
 };
 
-var updateObject = function(dt, e) {
-  var index = getEpoch(dt, e);
+var updateObject = function(dt, body) {
+  var index = getEpoch(dt, body.elements);
   
   //has special data, todo: find appropriate data
-  if (has(e[index], "d")) return;
+  if (has(body.elements[index], "d")) return;
 
   //var e = d.elements[index];
-  var pos = transform(e[index], dt);
-
-  return [-pos.y, pos.z, -pos.x];
+  var pos = transform(body.elements[index], dt);
+  body.pos = [-pos.y, pos.z, -pos.x];
+  
+  return body.pos;
 };
 
 //Find valid set of elements for date
@@ -1803,7 +2075,7 @@ var getEpoch = function(dt, e) {
   if (e.length > 1) {
     //find trajectory for date 
     for (var i=0; i<e.length; i++) {
-      if (dtDiff(new Date(Date.parse(e[i].ep)), dt) <= 0) {
+      if (dateDiff(new Date(Date.parse(e[i].ep)), dt) <= 0) {
         index = i===0 ? 0 : i-1;
         break;
       }
@@ -1818,17 +2090,17 @@ var getOrbit = function(dt, d) {
       geo = new THREE.Geometry();
   
   var period = p0.P,
-      end = dtAdd(dt, period, "y"),
-      step = dtDiff(dt, end)/90,
+      end = dateAdd(dt, period, "y"),
+      step = dateDiff(dt, end)/90,
       current = new Date(dt.valueOf());
   
-  while (dtDiff(current, end) > 0) {
+  while (dateDiff(current, end) > 0) {
     p = transform(e, current);
     geo.vertices.push(new THREE.Vector3(-p.y, p.z, -p.x));
     col = p.z >= 0 ? 0x999999 : 0x666666;
     geo.colors.push(new THREE.Color(col));
 
-    current = dtAdd(current, step);
+    current = dateAdd(current, step);
   }
 
   //geo.vertices.push( new THREE.Vector3(-p0.y, p0.z, -p0.x));
@@ -1840,9 +2112,11 @@ var getOrbit = function(dt, d) {
 var settings = {
   width: 0,            // Default width; 0 = full width of parent
   height: 0,           // Default height; 0 = full height of parent
-  container: "map",    // ID of parent element, e.g. div
+  date: true,
+  dateformat: "%Y-%m-%d",
+  container: "orrery-map",    // ID of parent element, e.g. div
   datapath: "data/",   // Path/URL to data files, empty = subfolder 'data'
-  imagepath: "img/",   // Path/URL to image files, empty = subfolder 'img'
+  imagepath: "images/",   // Path/URL to image files, empty = subfolder 'img'
   planets: {          
     show: true,        // Show planets, data in planets.json
     image: true,       // With image representation, if dataset contains icon parameter
@@ -1852,7 +2126,7 @@ var settings = {
   sbos: {
     show: true,        // Show small body objects, data in sbo.json
     image: false,      // With image representation, if dataset contains 'icon' parameter
-    text: true,        // Show object name, if dataset contains 'designator' parameter
+    text: true,        // Show object name, if dataset contains 'designation' parameter
     trajectory: false, // Show orbital path as line 
     size: null         // Constant size or function
   },
@@ -1904,6 +2178,7 @@ var Orrery = {
 
 var container, parNode, renderer, scene, camera,
     width, height, cfg,
+    sbomeshes = [],
     renderFcts= [];
 
 var display = function(config, date) {
@@ -1914,7 +2189,7 @@ var display = function(config, date) {
 
   parNode = $(cfg.container);
   if (parNode) { 
-    parID = "#"+cfg.container;
+    parID = "#" + cfg.container;
     var stl = window.getComputedStyle(parNode, null);
     if (!parseInt(stl.width) && !cfg.width) parNode.style.width = px(window.innerWidth);    
     if (!parseInt(stl.height) && !cfg.height) parNode.style.height = px(window.innerHeight);    
@@ -1927,41 +2202,50 @@ var display = function(config, date) {
   width = parNode ? parNode.clientWidth : window.innerWidth;
   height = parNode ? parNode.clientHeight : window.innerHeight;
 
+  // store all dynamic bodies
+  container = d3.select(parID).append("container");
+
   // init renderer
   renderer = new THREE.WebGLRenderer({antialias : true});
   renderer.setClearColor("#000");
   renderer.setSize( width, height );
+  renderer.setPixelRatio( window.devicePixelRatio );
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.BasicShadowMap;
+  
   parNode.appendChild(renderer.domElement );
-  //renderer.shadowMapEnabled  = true;
   
   scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x000000, 0.00025);
   
-
   camera = new THREE.PerspectiveCamera(45, width/height, 0.01, 10000);
   camera.position.z = 3.5;
   camera.position.y = 2;
   var controls = new THREE.OrbitControls(camera);
 
-  var light = new THREE.AmbientLight(0xffffff);
-  scene.add(light);
+  scene.add(new THREE.AmbientLight( 0x333333 ));
 
-  container = d3.select(parID).append("container");
+  var light = new THREE.PointLight( 0xffffff, 1, 0 );
+  light.castShadow = true;
+  //light.shadow.bias = 0.01;
   
   var mesh = THREEx.Planets.create("sol");
-  scene.add(mesh);
+  light.add(mesh);
+  scene.add(light);
 
 
-  //Display planets with image and orbital track
+  //Display planets with texture and orbital track
   d3.json('data/planets.json', function(error, json) {
     if (error) return console.log(error);
-          
+    
+    var data = [];
+    
     for (var key in json) {
       if (!has(json, key)) continue;
-      var dat = {};
+      var datum = {id: key};
       //object: pos[x,y,z],name,r,icon,elements
       var planet = getObject(dt, json[key]);
-      dat.body = planet;
+      datum.body = planet;
       
       if (has(json[key], "trajectory")) {
         //track: [x,y,z]
@@ -1976,7 +2260,7 @@ var display = function(config, date) {
 
         var line = new THREE.Line(track, mat);
         scene.add(line);
-        dat.track = line;
+        datum.track = line;
       }
       var mesh = THREEx.Planets.create(key);
       if (!mesh) {
@@ -1984,67 +2268,111 @@ var display = function(config, date) {
       }
       mesh.position.fromArray(planet.pos);
       scene.add(mesh);
-      dat.mesh = mesh;
+      
+      datum.mesh = mesh;
+      data.push(datum);
     }
-
-    
- 
-        
-    //container.selectAll(".planets").data(planets)
-    //  .enter().append("path")
-    //  .attr("class", "planet");
-    
+    container.selectAll(".planets").data(data)
+      .enter().append("path")
+      .attr("class", "planet");
   });
 
   //Display Small bodies as dots
   d3.json('data/sbo.json', function(error, json) {
     if (error) return console.log(error);
+
+    var data = [];
     
-   var map = new THREE.TextureLoader().load("maps/ast.png");
-   //12 diff sizes
-   var mat = [], geo = [], basesize = 0.006;
-   for (var i=1; i<=12; i++) {
+    var map = new THREE.TextureLoader().load("maps/circle.png");
+    var geo= [], mat = [], basesize = 0.006;
+    //12 discrete sizes
+    for (var i=1; i<=12; i++) {
      geo.push(new THREE.Geometry());
      mat.push(new THREE.PointsMaterial({
-       color:0xffffff, 
+       color:0xcc9999, 
        map: map,
-       blending: THREE.AdditiveBlending,
+       //blending: THREE.AdditiveBlending,
        size: basesize * i,
        transparent: true,
        fog: true
      }));
    }
+   
    for (var key in json) {
       if (!has(json, key)) continue;
-      var dat = {};
+      var datum = {};
       //sbos: pos[x,y,z],name,r
       //if (!isNumber(json[key].H)) { console.log(key); continue; }
       var sbo = getObject(dt, json[key]);
+      datum.body = sbo;
       var vec = new THREE.Vector3();
       vec.fromArray(sbo.pos);
       var index = Math.floor(sbo.r);
       if (index > 12) index = 12;
       geo[index-1].vertices.push(vec);
+      datum.size = index;
+      datum.vertex = geo[index-1].vertices.length - 1;
+      data.push(datum);
     }
     for (i=0; i<12; i++) {
-      scene.add(new THREE.Points(geo[i], mat[i]));
+      sbomeshes[i] = new THREE.Points(geo[i], mat[i]);
+      scene.add(sbomeshes[i]);
     }
+    container.selectAll(".sbos").data(data)
+      .enter().append("path")
+      .attr("class", "sbo");
   });
   
   // render the scene
   renderFcts.push(function(){
     //meshes.forEach( function(d, i) { d.rotateOnAxis( new THREE.Vector3( 0, 1, 0 ), rot[i]); })
+    
     var p = camera.position;
     scene.fog.density = 0.05 / Math.pow(p.x*p.x + p.y*p.y + p.z*p.z, 0.5);
     renderer.render(scene, camera);  
   });
   
+  if (cfg.date === true) {
+    var pick = datetimepicker({callback: function(date, tz) {
+      dt.setTime(date.valueOf());
+      d3.select("#datetime").html(pick.date());
+      Orrery.update(dt);
+    }, target: "#datetime", time: false, dateselect: false, startofweek: 1});
+
+    d3.select(parID).append("div").attr("id", "datetime").html( pick.date() ).on("click", function() { pick(dt); });
+        
+  }
+  
   init();
 };
 
 
+var update = function(dt) {
+  container.selectAll(".planet").each(function(d) { 
+    var pos = updateObject(dt, d.body);
+    if (!pos) return;
+    d.body.pos = pos;
+    d.mesh.position.fromArray(pos);
+  });
+    
+  container.selectAll(".sbo").each(function(d) { 
+    var pos = updateObject(dt, d.body);
+    d.body.pos = pos;
+    
+    sbomeshes[d.size-1].geometry.vertices[d.vertex].fromArray(pos);
+   
+    //d.mesh.position.fromArray(pos);
+  });
+  sbomeshes.forEach( function(d) { d.geometry.verticesNeedUpdate = true; });
+  
+};
+
 // handle window resize
 window.addEventListener('resize', function(){
+  var stl = window.getComputedStyle(parNode, null);
+  width = parseInt(stl.width);
+  height = parseInt(stl.height);
+  
   renderer.setSize(width, height);
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
@@ -2069,5 +2397,11 @@ function init() {
 }
 
 Orrery.display = display;
+Orrery.update = update;
+Orrery.animate = function(dt) {
+  update(dt);
+  dt.setDate(dt.getDate() + 1);  
+  setTimeout(Orrery.animate, 100,  dt);
+};
 this.Orrery = Orrery;
 })();

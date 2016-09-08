@@ -4,7 +4,25 @@ body { margin:0; padding:0; overflow: hidden }
 #map:active { cursor:move; cursor: grabbing; cursor: -moz-grabbing; cursor: -webkit-grabbing; }
 #map { width:100%; height:100%; background: #000;  }
 
-.sun { stroke : #ff0; fill : #ff0; }
-.planet, .sc { fill: #fff; stroke: #fff; }
-.sbo { fill: #fff; stroke: transparent; }
-.dot { stroke: #fff; stroke-width: 0.5;  stroke-dasharray: 2,3; fill:transparent; }
+#datetime { position:absolute; cursor:pointer; bottom:8px; left:10px; color:#0f0; }
+#datetimepicker { position:absolute; top:-9999px; width:193px; text-align:center; border:1px solid #000; border-radius: 6px; background:rgba(51,51,51,0.75); opacity:0; transition:.6s ease-in opacity; font: 13px/1 sans-serif; }
+#datetimepicker input, #datetimepicker select { font:inherit; border: 1px solid transparent; border-radius:3px; height:24px; background:transparent; }
+#datetimepicker #yr, #datetimepicker #mon { margin: 2px 3px; vertical-align:middle; font-size:1rem; font-weight:bold; color:#fff; }
+#datetimepicker #yr { width: 46px; text-align:left;  }
+#datetimepicker #mon { width: 92px; text-align:center;  }
+#datetimepicker #left, #datetimepicker #right { display:inline-block; width:12px; height:24px; margin:0; vertical-align:-8px; cursor:pointer;  background-image: url('images/dtpick.png'); }
+#datetimepicker #left { background-position: -8px -22px; }
+#datetimepicker #right { background-position: -30px -22px; }
+#datetimepicker #hr, #datetimepicker #min, #datetimepicker #sec { margin: 0 0 2px 0; width:34px; height:20px; }
+#datetimepicker #hr { border-right: 0px none; border-radius: 3px 0 0 3px;  }
+#datetimepicker #min { border-right: 0px none; border-left: 0px none;  border-radius: 0; }
+#datetimepicker #sec { border-left: 0px none;  border-radius: 0 3px 3px 0; }
+#datetimepicker #tz { margin: 0 0 2px 4px; }
+#datetimepicker #cal { display:inline-block; width:182px; margin:0 4px;  }
+#datetimepicker .date { display:inline-block; width:20px; height:14px; border:1px solid transparent; color:#eeb; font-weight: bold; text-align:right; vertical-align:middle; padding:2px 4px 2px 0; cursor:pointer; }
+#datetimepicker .grey { color:#999; }
+#datetimepicker .weekday { color:#666; font-sixe:11px; }
+#datetimepicker .weekend { color:#f00; }
+#datetimepicker .selected { border:1px solid #fff; border-radius:3px; }
+#datetimepicker .today { background:#c60; }
+
