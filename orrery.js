@@ -1371,13 +1371,13 @@ var datetimepicker = function(options) {
       years = getYears(date),
       target = cfg.target || "", 
       id = cfg.id || "datetimepicker", 
-      showtime = cfg.hasOwnProperty("time") ? cfg.time : true,
-      showtimezone = cfg.hasOwnProperty("timezone") ? cfg.timezone : true,
-      showweekdays = cfg.hasOwnProperty("weekdays") ? cfg.weekdays : true,
-      showdateselect = cfg.hasOwnProperty("dateselect") ? cfg.dateselect : true,
-      startofweek = cfg.hasOwnProperty("startofweek") ? cfg.startofweek : 0,
+      showtime = has(cfg, "time") ? cfg.time : true,
+      showtimezone = has(cfg, "timezone") ? cfg.timezone : true,
+      showweekdays = has(cfg, "weekdays") ? cfg.weekdays : true,
+      showdateselect = has(cfg, "dateselect") ? cfg.dateselect : true,
+      startofweek = has(cfg, "startofweek") ? cfg.startofweek : 0,
       //pick -> vanish
-      vanishonpick = cfg.hasOwnProperty("vanishonpick") ? cfg.vanishobpick : true,
+      vanishonpick = has(cfg, "vanishonpick") ? cfg.vanishobpick : true,
       callbackfunc = cfg.callback || null,
       //position top/bottom  , left/right
       position = cfg.position || ["left", "top"];
@@ -1425,7 +1425,8 @@ var datetimepicker = function(options) {
         
     if (!cal.node()) cal = picker.append("div").attr("id", "cal");
     yr = parseInt(yr); 
-    mo = findMonth(mo);
+    if (!isNumber(mo)) mo = findMonth(mo);
+    else mo = parseInt(mo);
     var curdt = new Date(yr, mo, 1);
     
     curdt.setDate(curdt.getDate() - curdt.getDay() + sow);
@@ -2112,11 +2113,12 @@ var getOrbit = function(dt, d) {
 var settings = {
   width: 0,            // Default width; 0 = full width of parent
   height: 0,           // Default height; 0 = full height of parent
-  date: true,
-  dateformat: "%Y-%m-%d",
-  container: "orrery-map",    // ID of parent element, e.g. div
+  date: true,          // Show date on map with date picker on click
+  dateformat: "%Y-%m-%d",  // Date format string 
+                       // (see https://github.com/d3/d3-time-format/blob/master/README.md#timeFormat)
+  container: "orrery-map", // ID of parent element, e.g. div
   datapath: "data/",   // Path/URL to data files, empty = subfolder 'data'
-  imagepath: "images/",   // Path/URL to image files, empty = subfolder 'img'
+  imagepath: "images/",   // Path/URL to image files, empty = subfolder 'images'
   planets: {          
     show: true,        // Show planets, data in planets.json
     image: true,       // With image representation, if dataset contains icon parameter
@@ -2337,7 +2339,7 @@ var display = function(config, date) {
       dt.setTime(date.valueOf());
       d3.select("#datetime").html(pick.date());
       Orrery.update(dt);
-    }, target: "#datetime", time: false, dateselect: false, startofweek: 1});
+    }, target: "#datetime", time: false, dateselect: false, startofweek: 0});
 
     d3.select(parID).append("div").attr("id", "datetime").html( pick.date() ).on("click", function() { pick(dt); });
         

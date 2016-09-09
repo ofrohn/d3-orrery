@@ -3,11 +3,12 @@
 var settings = {
   width: 0,            // Default width; 0 = full width of parent
   height: 0,           // Default height; 0 = full height of parent
-  date: true,
-  dateformat: "%Y-%m-%d",
-  container: "orrery-map",    // ID of parent element, e.g. div
+  date: true,          // Show date on map with date picker on click
+  dateformat: "%Y-%m-%d",  // Date format string 
+                       // (see https://github.com/d3/d3-time-format/blob/master/README.md#timeFormat)
+  container: "orrery-map", // ID of parent element, e.g. div
   datapath: "data/",   // Path/URL to data files, empty = subfolder 'data'
-  imagepath: "images/",   // Path/URL to image files, empty = subfolder 'img'
+  imagepath: "images/",   // Path/URL to image files, empty = subfolder 'images'
   planets: {          
     show: true,        // Show planets, data in planets.json
     image: true,       // With image representation, if dataset contains icon parameter

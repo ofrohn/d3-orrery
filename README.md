@@ -1,11 +1,26 @@
 # D3-Orrery
 
 An interactive Solar System simulator (a.k.a. Orrery) implemented with D3.js and three.js. Shows planets with images and trajectories, as well as small bodies as dots. Optional scacecraft with images and trajectories.
-* [Data formats](data/formats.md)
+* [Data formats](data/readme.md)
 
-### Options  
+### Usage
 
+```js
+//Default configuration (in so far it is implemented)
+var settings = {
+  width: 0,            // Default width; 0 = full width of parent
+  height: 0,           // Default height; 0 = full height of parent
+  date: true,          // Show date on map with date picker on click
+  dateformat: "%Y-%m-%d",  // Date format (see [d3.js time format](https://github.com/d3/d3-time-format/blob/master/README.md#timeFormat)
+  container: "orrery-map",    // ID of parent element, e.g. div
+  datapath: "data/",   // Path/URL to data files, empty = subfolder 'data'
+  imagepath: "images/",   // Path/URL to image files, empty = subfolder 'images'
+}
 
+// Diplay todays positions with above configuration
+Orrery.display(settings, new Date());
+
+```
 
 ### Files
 

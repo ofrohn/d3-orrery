@@ -108,7 +108,7 @@ target.build = function() {
 
   // zip data + prod. code + css
   tar.pack('./', {
-       entries: ['viewer.html', 'style.css', 'readme.md', 'LICENSE', 'orrery.js', 'orrery.min.js', 'data', 'images', 'lib/d3.min.js', 'lib/three.min.js'] 
+       entries: ['viewer.html', 'style.css', 'readme.md', 'LICENSE', 'orrery.js', 'orrery.min.js', 'data', 'images', 'maps', 'lib/d3.min.js', 'lib/three.min.js'] 
      })
      .pipe(zlib.createGzip())
      .pipe(fs.createWriteStream(filename + '.tar.gz'))

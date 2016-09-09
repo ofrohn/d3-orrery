@@ -1,4 +1,4 @@
-/* global dateDiff, px, findPos, isNumber */
+/* global dateDiff, px, has, findPos, isNumber */
 var datetimepicker = function(options) {
   //options: id:string, target:string, format:string (d3.time.format), time:bool,  timezone:bool, weekdays: bool, dateselect: bool, startofweek: bool, vanishonpick: bool, position:[left, top], callback: function
   
@@ -13,13 +13,13 @@ var datetimepicker = function(options) {
       years = getYears(date),
       target = cfg.target || "", 
       id = cfg.id || "datetimepicker", 
-      showtime = cfg.hasOwnProperty("time") ? cfg.time : true,
-      showtimezone = cfg.hasOwnProperty("timezone") ? cfg.timezone : true,
-      showweekdays = cfg.hasOwnProperty("weekdays") ? cfg.weekdays : true,
-      showdateselect = cfg.hasOwnProperty("dateselect") ? cfg.dateselect : true,
-      startofweek = cfg.hasOwnProperty("startofweek") ? cfg.startofweek : 0,
+      showtime = has(cfg, "time") ? cfg.time : true,
+      showtimezone = has(cfg, "timezone") ? cfg.timezone : true,
+      showweekdays = has(cfg, "weekdays") ? cfg.weekdays : true,
+      showdateselect = has(cfg, "dateselect") ? cfg.dateselect : true,
+      startofweek = has(cfg, "startofweek") ? cfg.startofweek : 0,
       //pick -> vanish
-      vanishonpick = cfg.hasOwnProperty("vanishonpick") ? cfg.vanishobpick : true,
+      vanishonpick = has(cfg, "vanishonpick") ? cfg.vanishobpick : true,
       callbackfunc = cfg.callback || null,
       //position top/bottom  , left/right
       position = cfg.position || ["left", "top"];
@@ -67,7 +67,8 @@ var datetimepicker = function(options) {
         
     if (!cal.node()) cal = picker.append("div").attr("id", "cal");
     yr = parseInt(yr); 
-    mo = findMonth(mo);
+    if (!isNumber(mo)) mo = findMonth(mo);
+    else mo = parseInt(mo);
     var curdt = new Date(yr, mo, 1);
     
     curdt.setDate(curdt.getDate() - curdt.getDay() + sow);

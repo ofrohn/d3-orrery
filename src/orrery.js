@@ -164,7 +164,7 @@ var display = function(config, date) {
       dt.setTime(date.valueOf());
       d3.select("#datetime").html(pick.date());
       Orrery.update(dt);
-    }, target: "#datetime", time: false, dateselect: true, startofweek: 0});
+    }, target: "#datetime", time: false, dateselect: false, startofweek: 0});
 
     d3.select(parID).append("div").attr("id", "datetime").html( pick.date() ).on("click", function() { pick(dt); });
         
