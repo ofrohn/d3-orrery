@@ -24,5 +24,5 @@ body { margin:0; padding:0; overflow: hidden }
 #datetimepicker .weekday { color:#666; font-sixe:11px; }
 #datetimepicker .weekend { color:#f00; }
 #datetimepicker .selected { border:1px solid #fff; border-radius:3px; }
-#datetimepicker .today { background:#c60; }
+#datetimepicker .today { background: rgba(255, 255, 0, 0.6); }
 
