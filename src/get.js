@@ -1,14 +1,14 @@
 /* global THREE, transform, dt, dateAdd, dateDiff, has  */
 
-var getObject = function(dt, d) {
+var getObject = function(dt, d, par) {
   
   var index = getEpoch(dt, d.elements);
-  
+  var parent = par || "sol";
   //has special data, todo: find appropriate data
   if (has(d.elements[index], "d")) return;
 
   var e = d.elements[index];
-  var pos = transform(e, dt);
+  var pos = transform(e, dt, par);
   
   var res = {name: d.name, pos: [-pos.y, pos.z, -pos.x], elements: d.elements};
   // size
@@ -64,7 +64,7 @@ var getOrbit = function(dt, d) {
   while (dateDiff(current, end) > 0) {
     p = transform(e, current);
     geo.vertices.push(new THREE.Vector3(-p.y, p.z, -p.x));
-    col = p.z >= 0 ? 0x999999 : 0x666666;
+    col = p.z >= 0 ? 0xaaaaaa : 0x666666;
     geo.colors.push(new THREE.Color(col));
 
     current = dateAdd(current, step);
@@ -73,4 +73,9 @@ var getOrbit = function(dt, d) {
   //geo.vertices.push( new THREE.Vector3(-p0.y, p0.z, -p0.x));
   
   return geo;
+};
+
+var getProbe = function(dt, d) {
+  //elements, position, location
+  
 };

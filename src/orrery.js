@@ -1,15 +1,15 @@
-/* global THREE, THREEx, loader, getObject, updateObject, getOrbit, datetimepicker, has, settings, $, px */
+/* global THREE, THREEx, loader, getObject, updateObject, getOrbit, datetimepicker, particleshader, has, settings, $, px */
 var Orrery = {
   version: '0.4'
 };
 
 var container, parNode, renderer, scene, camera,
-    width, height, cfg,
-    sbomeshes = [],
+    width, height, cfg, sbomesh,
     renderFcts= [];
 
 var display = function(config, date) {
   var dt = date || new Date(),
+      interval = 86400, 
       parID = null; 
 
   cfg = settings.set(config); 
@@ -101,7 +101,8 @@ var display = function(config, date) {
     }
     container.selectAll(".planets").data(data)
       .enter().append("path")
-      .attr("class", "planet");
+      .attr("class", "planet")
+      .attr("id", function(d) { return d.id; } );
   });
 
   //Display Small bodies as dots
@@ -112,12 +113,12 @@ var display = function(config, date) {
         length = Object.keys(json).length,
 			  positions = new Float32Array( length * 3 ),
 			  colors = new Float32Array( length * 3 ),
-			  sizes = new Float32Array( length );
+			  sizes = new Float32Array( length ),
         i = 0;
         
     for (var key in json) {
       if (!has(json, key)) continue;
-      var datum = {};
+      var datum = {id: key};
       //sbos: pos[x,y,z],name,r
       var sbo = getObject(dt, json[key]);
       datum.body = sbo;
@@ -125,7 +126,7 @@ var display = function(config, date) {
       var vec = new THREE.Vector3().fromArray(sbo.pos);
       vec.toArray( positions, i * 3 );
       
-      col = new THREE.Color( 0xe9d1b1 ); 
+      var col = new THREE.Color( 0xe9d1b1 ); 
       col.toArray( colors, i * 3 );
       
       sizes[i] = sbo.r;
@@ -146,7 +147,8 @@ var display = function(config, date) {
 
     container.selectAll(".sbos").data( data )
       .enter().append("path")
-      .attr("class", "sbo");
+      .attr("class", "sbo")
+      .attr("id", function(d) { return d.id; } );
   });
   
   // render the scene

@@ -83,6 +83,11 @@ function dateFrac(dt) {
   return (dt.getHours() + dt.getTimezoneOffset()/60.0 + dt.getMinutes()/60.0 + dt.getSeconds()/3600.0) / 24;
 }
 
+
+function dateFracUTC(dt) {
+  return (dt.getUTCHours() + dt.getUTCMinutes()/60.0 + dt.getUTCSeconds()/3600.0) / 24;
+}
+
 var Trig = {
   sinh: function (val) { return (Math.pow(Math.E, val)-Math.pow(Math.E, -val))/2; },
   cosh: function (val) { return (Math.pow(Math.E, val)+Math.pow(Math.E, -val))/2; },
@@ -91,18 +96,14 @@ var Trig = {
   acosh: function (val) { return Math.log(val + Math.sqrt(val * val - 1)); },
   normalize0: function(val) {  return ((val + Math.PI*3) % (Math.PI*2)) - Math.PI; },
   normalize: function(val) {  return ((val + Math.PI*2) % (Math.PI*2)); },  
-  //deg2rad: function(val)  {  return val * Math.PI / 180; },
-  //hour2rad: function(val) {  return val * Math.PI / 12; },
-  //rad2deg: function(val)  {  return val * 180 / Math.PI; },
-  //rad2hour: function(val) {  return val * 12 / Math.PI; },
   cartesian: function(p) {
-    var θ = p[0] * deg2rad, ϕ = p[1] * deg2rad, r = p[2];
-    return [r * Math.sin(ϕ) * Math.cos(θ), r * Math.sin(ϕ) * Math.sin(θ), r * Math.cos(ϕ)];
+    var ϕ = p[0] * deg2rad, θ = (90 - p[1]) * deg2rad, r = p[2];
+    return [r * Math.sin(θ) * Math.cos(ϕ), r * Math.sin(θ) * Math.sin(ϕ), r * Math.cos(θ)];
   },
   spherical: function(p) {
     var r = Math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z),
-        θ = Math.atan(p.y / p.x),
-        ϕ = Math.acos(p.z / r);
-    return  [θ / deg2rad, ϕ / deg2rad, r];
+        ϕ = Math.atan(p.y / p.x),
+        θ = Math.acos(p.z / r);
+    return  [ϕ / deg2rad, θ / deg2rad, r];
   }
 };

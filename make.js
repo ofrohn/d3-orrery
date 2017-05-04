@@ -68,13 +68,14 @@ target.build = function() {
   }
   
   */
+  /*
   var data = JSON.parse(cat('./data/probes.json'));
 
   for (key in data) {
     if (data[key].hasOwnProperty('icon'))
-      cp('-f', probepath + data[key].icon, 'images');
+      cp('-f', probepath + data[key].icon, 'images/probes');
   }
-
+  */
   var file = cat([
     './lib/threex.planets.js', 
     './lib/OrbitControls.js', 
@@ -82,6 +83,7 @@ target.build = function() {
     './src/util.js',
     './src/transform.js', 
     './src/get.js',
+    './src/particleshader.js',
     './src/config.js', 
     './src/orrery.js'
   ]);
@@ -108,7 +110,7 @@ target.build = function() {
 
   // zip data + prod. code + css
   tar.pack('./', {
-       entries: ['viewer.html', 'style.css', 'readme.md', 'LICENSE', 'orrery.js', 'orrery.min.js', 'data', 'images', 'maps', 'lib/d3.min.js', 'lib/three.min.js'] 
+       entries: ['viewer.html', 'style.css', 'readme.md', 'LICENSE', 'orrery.js', 'orrery.min.js', 'data', 'images', 'lib/d3.min.js', 'lib/three.min.js'] 
      })
      .pipe(zlib.createGzip())
      .pipe(fs.createWriteStream(filename + '.tar.gz'))

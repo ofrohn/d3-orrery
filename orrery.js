@@ -3,7 +3,7 @@
 
 THREEx.Planets = {};
 
-THREEx.Planets.baseURL = "maps/";
+THREEx.Planets.baseURL = "images/maps/";
 
 // maps from http://planetpixelemporium.com/ and others (see readme)
 
@@ -99,12 +99,12 @@ THREEx.Planets.create = function(body, skipextras) {
   if (p.hasOwnProperty("spec")) {
     arg.specularMap = loader.load(THREEx.Planets.baseURL + p.spec);  
   }
-  arg.specular = new THREE.Color( 0x333333 );
-  arg.shininess = 0.1;
   
   if (body === "sol") { //ommmmmmm
     var material = new THREE.MeshBasicMaterial(arg);
   } else {
+    arg.specular = new THREE.Color( 0x333333 );
+    arg.shininess = 0.1;
     var material = new THREE.MeshPhongMaterial(arg);
   }
   var mesh = new THREE.Mesh(geometry, material);
@@ -1757,6 +1757,11 @@ function dateFrac(dt) {
   return (dt.getHours() + dt.getTimezoneOffset()/60.0 + dt.getMinutes()/60.0 + dt.getSeconds()/3600.0) / 24;
 }
 
+
+function dateFracUTC(dt) {
+  return (dt.getUTCHours() + dt.getUTCMinutes()/60.0 + dt.getUTCSeconds()/3600.0) / 24;
+}
+
 var Trig = {
   sinh: function (val) { return (Math.pow(Math.E, val)-Math.pow(Math.E, -val))/2; },
   cosh: function (val) { return (Math.pow(Math.E, val)+Math.pow(Math.E, -val))/2; },
@@ -1765,26 +1770,37 @@ var Trig = {
   acosh: function (val) { return Math.log(val + Math.sqrt(val * val - 1)); },
   normalize0: function(val) {  return ((val + Math.PI*3) % (Math.PI*2)) - Math.PI; },
   normalize: function(val) {  return ((val + Math.PI*2) % (Math.PI*2)); },  
-  //deg2rad: function(val)  {  return val * Math.PI / 180; },
-  //hour2rad: function(val) {  return val * Math.PI / 12; },
-  //rad2deg: function(val)  {  return val * 180 / Math.PI; },
-  //rad2hour: function(val) {  return val * 12 / Math.PI; },
   cartesian: function(p) {
-    var θ = p[0] * deg2rad, ϕ = p[1] * deg2rad, r = p[2];
-    return [r * Math.sin(ϕ) * Math.cos(θ), r * Math.sin(ϕ) * Math.sin(θ), r * Math.cos(ϕ)];
+    var ϕ = p[0] * deg2rad, θ = (90 - p[1]) * deg2rad, r = p[2];
+    return [r * Math.sin(θ) * Math.cos(ϕ), r * Math.sin(θ) * Math.sin(ϕ), r * Math.cos(θ)];
   },
   spherical: function(p) {
     var r = Math.sqrt(p.x * p.x + p.y * p.y + p.z * p.z),
-        θ = Math.atan(p.y / p.x),
-        ϕ = Math.acos(p.z / r);
-    return  [θ / deg2rad, ϕ / deg2rad, r];
+        ϕ = Math.atan(p.y / p.x),
+        θ = Math.acos(p.z / r);
+    return  [ϕ / deg2rad, θ / deg2rad, r];
   }
 };
 
 
-var gm = Math.pow(0.01720209895, 2);
+var gm, gmdat = {
+  "sol": 0.0002959122082855911025,  // AU^3/d^2
+  "mer": 164468599544771, //km^3/d^2
+  "ven": 2425056445892137,
+  "ter": 2975536307796296,
+  "lun": 36599199229256,
+  "mar": 319711652803400,
+  "cer": 467549107200,
+  "ves": 129071530155,
+  "jup": 945905743547733000,
+  "sat": 283225255921345000,
+  "ura": 43256076555832200,
+  "nep": 51034453325494200,
+  "plu": 7327611364884,
+  "eri": 8271175680000
+};
 
-var transform = function(item, date, gmass) {
+var transform = function(item, date, parent) {
   var dt, i, key, dat = {}, elms = ["a","e","i","w","M","L","W","N","n"];
 /*
     ep = epoch (dt)
@@ -1794,7 +1810,7 @@ var transform = function(item, date, gmass) {
     a = semi-major axis, or mean distance from Sun (AU,km)
     e = eccentricity (0=circle, 0-1=ellipse, 1=parabola, >1=hyperbola ) (-)
     M = mean anomaly (0 at perihelion; increases uniformly with time) (deg)
-    n = mean daily motion = 2pi/P
+    n = mean daily motion = 360/P (deg/day)
     
     W = N + w  = longitude of perihelion ϖ
     L = M + W  = mean longitude
@@ -1808,7 +1824,8 @@ var transform = function(item, date, gmass) {
     Mandatory: a, e, i, N, w|W, M|L, dM|n
 */
   
-  if (gmass) gm = gmass;
+  if (parent) gm = gmdat[parent];
+  else gm = gmdat.sol;
 
   if (date) {
     if (date instanceof Date) { dt = date; }
@@ -1846,10 +1863,7 @@ var transform = function(item, date, gmass) {
 };
 
 //AU 149597870.7 km
-//gm_sol = 0.0002959122082855911025 (AU^3/d^2)
-//gm_earth = 8.8876925870231737638917894479187e-10 (AU^3/d^2)           
-//gm_earth = 2975536354019328 (km^3/d^2)  
-
+//G 
              
 
 function near_parabolic(E, e) {
@@ -2012,37 +2026,33 @@ function ecliptic(dat) {
 }
 
 function JD(dt) {  
-    var yr = dt.getUTCFullYear(),
-        mo = dt.getUTCMonth() + 1,
-        dy = dt.getUTCDate(),
-        frac = dateFrac(dt),
-        j = 0, ly = 0, my, ypmy, djm, djm0 = 2400000.5,
-        IYMIN = -4799,         /* Earliest year allowed (4800BC) */
-        mtab = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];   /* Month lengths in days */
+  var yr = dt.getUTCFullYear(),
+      mo = dt.getUTCMonth() + 1,
+      dy = dt.getUTCDate(),
+      frac = (dt.getUTCHours() - 12 + dt.getUTCMinutes()/60.0 + dt.getUTCSeconds()/3600.0) / 24, 
+      IYMIN = -4799;         /* Earliest year allowed (4800BC) */
 
-    if (yr < IYMIN) return -1; 
-    if (mo < 1 || mo > 12) return -2; 
-    
-    if ((mo === 2) && (yr % 4 === 0) && ((yr % 100 !== 0) || (yr % 400 === 0))) { ly = 1; }
-    if ( (dy < 1) || (dy > (mtab[mo-1] + ly))) { j = -3; }
-     my = (mo - 14) / 12;
-     ypmy = yr + my;
-     djm = ((1461.0 * (ypmy + 4800.0)) / 4 + (367 * (mo - 2 - 12 * my)) / 12 - (3 * ((ypmy + 4900.0) / 100)) / 4 + dy - 2432076);
+  if (yr < IYMIN) return -1; 
 
-     return djm + djm0 + frac;
-  }
+  var a = Math.floor((14 - mo) / 12),
+      y = yr + 4800 - a,
+      m = mo + 12 * a - 3;
+
+  var jdn = dy + Math.floor((153 * m + 2)/5) + (365 * y) + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+  return jdn + frac;   
+}
 
 
 
-var getObject = function(dt, d) {
+var getObject = function(dt, d, par) {
   
   var index = getEpoch(dt, d.elements);
-  
+  var parent = par || "sol";
   //has special data, todo: find appropriate data
   if (has(d.elements[index], "d")) return;
 
   var e = d.elements[index];
-  var pos = transform(e, dt);
+  var pos = transform(e, dt, par);
   
   var res = {name: d.name, pos: [-pos.y, pos.z, -pos.x], elements: d.elements};
   // size
@@ -2098,7 +2108,7 @@ var getOrbit = function(dt, d) {
   while (dateDiff(current, end) > 0) {
     p = transform(e, current);
     geo.vertices.push(new THREE.Vector3(-p.y, p.z, -p.x));
-    col = p.z >= 0 ? 0x999999 : 0x666666;
+    col = p.z >= 0 ? 0xaaaaaa : 0x666666;
     geo.colors.push(new THREE.Color(col));
 
     current = dateAdd(current, step);
@@ -2108,6 +2118,53 @@ var getOrbit = function(dt, d) {
   
   return geo;
 };
+
+var getProbe = function(dt, d) {
+  //elements, position, location
+  
+};
+
+//from https://github.com/mrdoob/three.js/blob/master/examples/webgl_custom_attributes_points2.html
+var texture = new THREE.TextureLoader().load( "images/ast.png" );
+texture.wrapS = THREE.RepeatWrapping;
+texture.wrapT = THREE.RepeatWrapping;
+
+var particleshader = new THREE.ShaderMaterial( {
+  uniforms: {
+    color:     { value: new THREE.Color( 0x999999 ) },
+    texture:   { value: texture }
+  },
+  vertexShader:  [
+    "attribute float size;",
+    "attribute vec3 ca;",
+    "varying vec3 vColor;",
+    //"varying vec3 vNormal;",
+    "void main() {",
+      "vColor = ca;",
+      //"vNormal = normal;",
+      "vec4 mvPosition = modelViewMatrix * vec4( position, 1.0 );",
+      "gl_PointSize = size * ( 1.0 / -mvPosition.z );",
+      "gl_Position = projectionMatrix * mvPosition;",
+    "}"  
+  ].join( "\n" ),
+  fragmentShader: [
+    "uniform vec3 color;",
+    "uniform sampler2D texture;",
+    "varying vec3 vColor;",
+    //"varying vec3 vNormal;",
+    "void main() {",
+      //"vec3 light = vec3(0, 0.01, 0);",
+      //"light = normalize(light);",
+      "vec4 color = vec4( color * vColor, 1.0 ) * texture2D( texture, gl_PointCoord );",
+      //"float dProd = max(0.0, dot(vNormal, light));",
+      //"gl_FragColor = vec4(dProd, dProd, dProd, 1.0);",
+      "gl_FragColor = color;",
+    "}"
+  ].join( "\n" ),  
+  transparent:    true
+  //lights: true
+});
+
 
 //Default configuration
 var settings = {
@@ -2179,12 +2236,12 @@ var Orrery = {
 };
 
 var container, parNode, renderer, scene, camera,
-    width, height, cfg,
-    sbomeshes = [],
+    width, height, cfg, sbomesh,
     renderFcts= [];
 
 var display = function(config, date) {
   var dt = date || new Date(),
+      interval = 86400, 
       parID = null; 
 
   cfg = settings.set(config); 
@@ -2276,53 +2333,54 @@ var display = function(config, date) {
     }
     container.selectAll(".planets").data(data)
       .enter().append("path")
-      .attr("class", "planet");
+      .attr("class", "planet")
+      .attr("id", function(d) { return d.id; } );
   });
 
   //Display Small bodies as dots
   d3.json('data/sbo.json', function(error, json) {
     if (error) return console.log(error);
 
-    var data = [];
-    
-    var map = new THREE.TextureLoader().load("maps/circle.png");
-    var geo= [], mat = [], basesize = 0.006;
-    //12 discrete sizes
-    for (var i=1; i<=12; i++) {
-     geo.push(new THREE.Geometry());
-     mat.push(new THREE.PointsMaterial({
-       color:0xcc9999, 
-       map: map,
-       //blending: THREE.AdditiveBlending,
-       size: basesize * i,
-       transparent: true,
-       fog: true
-     }));
-   }
-   
-   for (var key in json) {
+    var data = [],
+        length = Object.keys(json).length,
+			  positions = new Float32Array( length * 3 ),
+			  colors = new Float32Array( length * 3 ),
+			  sizes = new Float32Array( length ),
+        i = 0;
+        
+    for (var key in json) {
       if (!has(json, key)) continue;
-      var datum = {};
+      var datum = {id: key};
       //sbos: pos[x,y,z],name,r
-      //if (!isNumber(json[key].H)) { console.log(key); continue; }
       var sbo = getObject(dt, json[key]);
       datum.body = sbo;
-      var vec = new THREE.Vector3();
-      vec.fromArray(sbo.pos);
-      var index = Math.floor(sbo.r);
-      if (index > 12) index = 12;
-      geo[index-1].vertices.push(vec);
-      datum.size = index;
-      datum.vertex = geo[index-1].vertices.length - 1;
+      
+      var vec = new THREE.Vector3().fromArray(sbo.pos);
+      vec.toArray( positions, i * 3 );
+      
+      var col = new THREE.Color( 0xe9d1b1 ); 
+      col.toArray( colors, i * 3 );
+      
+      sizes[i] = sbo.r;
+      i++;
+      
       data.push(datum);
     }
-    for (i=0; i<12; i++) {
-      sbomeshes[i] = new THREE.Points(geo[i], mat[i]);
-      scene.add(sbomeshes[i]);
-    }
-    container.selectAll(".sbos").data(data)
+   
+    var geometry = new THREE.BufferGeometry();
+    geometry.addAttribute( 'position', new THREE.BufferAttribute( positions, 3 ) );
+    geometry.addAttribute( 'size', new THREE.BufferAttribute( sizes, 1 ) );
+    geometry.addAttribute( 'ca', new THREE.BufferAttribute( colors, 3 ) ); 
+      
+    sbomesh = new THREE.Points( geometry, particleshader );
+    //sbomesh.receiveShadow = true;
+
+    scene.add( sbomesh );
+
+    container.selectAll(".sbos").data( data )
       .enter().append("path")
-      .attr("class", "sbo");
+      .attr("class", "sbo")
+      .attr("id", function(d) { return d.id; } );
   });
   
   // render the scene
@@ -2330,7 +2388,7 @@ var display = function(config, date) {
     //meshes.forEach( function(d, i) { d.rotateOnAxis( new THREE.Vector3( 0, 1, 0 ), rot[i]); })
     
     var p = camera.position;
-    scene.fog.density = 0.05 / Math.pow(p.x*p.x + p.y*p.y + p.z*p.z, 0.5);
+    scene.fog.density = 0.05 / Math.pow( p.x*p.x + p.y*p.y + p.z*p.z, 0.5 );
     renderer.render(scene, camera);  
   });
   
@@ -2356,16 +2414,20 @@ var update = function(dt) {
     d.body.pos = pos;
     d.mesh.position.fromArray(pos);
   });
-    
-  container.selectAll(".sbo").each(function(d) { 
+  
+  var positions = sbomesh.geometry.getAttribute( 'position' ).array; 
+
+  container.selectAll(".sbo").each(function(d, i) { 
     var pos = updateObject(dt, d.body);
-    d.body.pos = pos;
-    
-    sbomeshes[d.size-1].geometry.vertices[d.vertex].fromArray(pos);
+    //d.body.pos = pos;
+    var vec = new THREE.Vector3().fromArray(pos);
+    vec.toArray( positions, i * 3 );
+
+    //sbomeshes[d.size-1].geometry.vertices[d.vertex].fromArray(pos);
    
     //d.mesh.position.fromArray(pos);
   });
-  sbomeshes.forEach( function(d) { d.geometry.verticesNeedUpdate = true; });
+  sbomesh.geometry.attributes.position.needsUpdate = true;
   
 };
 

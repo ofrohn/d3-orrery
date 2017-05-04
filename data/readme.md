@@ -5,7 +5,9 @@
   "name": "<string>",  // (opt) Object name
   "desig": "<string>", // (opt) Object designator
   "icon": "<string>",  // (opt) Image representation 
-  "H": <number>,  // Absolute magnitude (mag)
+  "H": <number>,       // Absolute magnitude (mag)
+  "astar": <number>    // (opt) a* color index 
+  "iz": <number>       // (opt) i-z color index 
   "elements": [
    {"a": <number>,   // Semimajor axis (AU)
     "e": <number>,   // Eccentricity  (n)
@@ -26,9 +28,33 @@
     "dW": <number>,  // (opt) Longitude of perihelion change (deg/cy) 
     "dN": <number>,  // (opt) Longitude of the ascending node change (deg/cy) 
     "ep": "<date>"   // Epoch (YYYY-MM-DD)
-   }, {} ... 
+   }, {}, ... 
   ]
  }, 
- {} ...
+ {}, ...
  }
+```
+
+###Probes with elements, trajectory or location
+```js
+{
+ "Id": {               // Unique identifier
+  "name": "<string>",  // (opt) Object name
+  "icon": "<string>",  // (opt) Image representation 
+  "trajectory": [
+    {"date": "<date>", // Start date, eom: end date (yyyy-mm-dd)
+     "type": "<type>", // elements|ecliptic|cartesian|orbit|eom
+     "data":
+       {elements} ||   // Osculating elements (see above)
+       [l, b, r] ||    // Polar trajectory coordinates longitude (deg), latitude (deg), range [AU|km]
+       [x, y, z] ||    // Cartesian coordinates x, y, z [AU|km]
+       parent          // Orbited parent body, default sol
+       null            // eom = End of mission without data
+    },
+    {},...
+  ]
+ }, {}, ...
+}
+// r, x, y, & z in AU in solar orbit, km otherwise
+// l,b in degrees
 ```

@@ -1,7 +1,22 @@
-/* global Trig, dateParse, dateFrac, has */
-var gm = Math.pow(0.01720209895, 2);
+/* global Trig, dateParse, dateFracUTC, has */
+var gm, gmdat = {
+  "sol": 0.0002959122082855911025,  // AU^3/d^2
+  "mer": 164468599544771, //km^3/d^2
+  "ven": 2425056445892137,
+  "ter": 2975536307796296,
+  "lun": 36599199229256,
+  "mar": 319711652803400,
+  "cer": 467549107200,
+  "ves": 129071530155,
+  "jup": 945905743547733000,
+  "sat": 283225255921345000,
+  "ura": 43256076555832200,
+  "nep": 51034453325494200,
+  "plu": 7327611364884,
+  "eri": 8271175680000
+};
 
-var transform = function(item, date, gmass) {
+var transform = function(item, date, parent) {
   var dt, i, key, dat = {}, elms = ["a","e","i","w","M","L","W","N","n"];
 /*
     ep = epoch (dt)
@@ -11,7 +26,7 @@ var transform = function(item, date, gmass) {
     a = semi-major axis, or mean distance from Sun (AU,km)
     e = eccentricity (0=circle, 0-1=ellipse, 1=parabola, >1=hyperbola ) (-)
     M = mean anomaly (0 at perihelion; increases uniformly with time) (deg)
-    n = mean daily motion = 2pi/P
+    n = mean daily motion = 360/P (deg/day)
     
     W = N + w  = longitude of perihelion ϖ
     L = M + W  = mean longitude
@@ -25,7 +40,8 @@ var transform = function(item, date, gmass) {
     Mandatory: a, e, i, N, w|W, M|L, dM|n
 */
   
-  if (gmass) gm = gmass;
+  if (parent) gm = gmdat[parent];
+  else gm = gmdat.sol;
 
   if (date) {
     if (date instanceof Date) { dt = date; }
@@ -63,10 +79,7 @@ var transform = function(item, date, gmass) {
 };
 
 //AU 149597870.7 km
-//gm_sol = 0.0002959122082855911025 (AU^3/d^2)
-//gm_earth = 8.8876925870231737638917894479187e-10 (AU^3/d^2)           
-//gm_earth = 2975536354019328 (km^3/d^2)  
-
+//G 
              
 
 function near_parabolic(E, e) {
@@ -229,22 +242,18 @@ function ecliptic(dat) {
 }
 
 function JD(dt) {  
-    var yr = dt.getUTCFullYear(),
-        mo = dt.getUTCMonth() + 1,
-        dy = dt.getUTCDate(),
-        frac = dateFrac(dt),
-        j = 0, ly = 0, my, ypmy, djm, djm0 = 2400000.5,
-        IYMIN = -4799,         /* Earliest year allowed (4800BC) */
-        mtab = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];   /* Month lengths in days */
+  var yr = dt.getUTCFullYear(),
+      mo = dt.getUTCMonth() + 1,
+      dy = dt.getUTCDate(),
+      frac = (dt.getUTCHours() - 12 + dt.getUTCMinutes()/60.0 + dt.getUTCSeconds()/3600.0) / 24, 
+      IYMIN = -4799;         /* Earliest year allowed (4800BC) */
 
-    if (yr < IYMIN) return -1; 
-    if (mo < 1 || mo > 12) return -2; 
-    
-    if ((mo === 2) && (yr % 4 === 0) && ((yr % 100 !== 0) || (yr % 400 === 0))) { ly = 1; }
-    if ( (dy < 1) || (dy > (mtab[mo-1] + ly))) { j = -3; }
-     my = (mo - 14) / 12;
-     ypmy = yr + my;
-     djm = ((1461.0 * (ypmy + 4800.0)) / 4 + (367 * (mo - 2 - 12 * my)) / 12 - (3 * ((ypmy + 4900.0) / 100)) / 4 + dy - 2432076);
+  if (yr < IYMIN) return -1; 
 
-     return djm + djm0 + frac;
-  }
+  var a = Math.floor((14 - mo) / 12),
+      y = yr + 4800 - a,
+      m = mo + 12 * a - 3;
+
+  var jdn = dy + Math.floor((153 * m + 2)/5) + (365 * y) + Math.floor(y / 4) - Math.floor(y / 100) + Math.floor(y / 400) - 32045;
+  return jdn + frac;   
+}
