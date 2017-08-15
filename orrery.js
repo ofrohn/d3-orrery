@@ -1,33 +1,59 @@
-// Copyright 2015 Olaf Frohn https://github.com/ofrohn, see LICENSE
+// Copyright 2015-17 Olaf Frohn https://github.com/ofrohn, see LICENSE
 !(function() {var THREEx = THREEx || {};
 
 THREEx.Planets = {};
 
-THREEx.Planets.baseURL = "images/maps/";
+THREEx.Planets.baseURL = "../images/";
+// Proportional scaling of planetary spheres
+THREEx.Planets.scale = 1.0;
 
 // maps from http://planetpixelemporium.com/ and others (see readme)
 
 THREEx.Planets.params = {
-  // texture map, bump map, cloud map, arbitrary radius, axis tilt in degrees, rotation period in days
+  // texture map, bump map, cloud map, arbitrary radius, axis tilt in degrees, rotation period in days, 
+  // rotation: axis pole long/lat in eclipic coordinate in degrees, angular velocity in degrees/day
   // ring: texture map, outer radius rel. to planet, opacity
-  "sol": {map: "sunmap.jpg", radius: 0.12, tilt: 7.25, rot: 1.0438,
-          corona: {map: "solarcorona.jpg", radius:0.53} },
-  "mer": {map: "mercurymap.jpg", bump:"mercurybump.jpg", radius: 0.03, tilt: 0, rot: 58.646},
-  "ven": {map: "venusmap.jpg", radius: 0.04, tilt: 177.3, rot: 4.05},
-  "ter": {map: "earthmap.jpg", bump:"earthbump.jpg", clouds:"earthclouds.png", radius: 0.04, tilt: 23.45, rot: 0.9973},
-  "lun": {map: "moonmap.jpg", bump:"moonbump.jpg", radius: 0.025, tilt: 1.54, rot: 27.3217},
-  "mar": {map: "marsmap.jpg", bump:"marsbump.jpg", clouds:"marsclouds.png", radius: 0.035, tilt: 25.19, rot: 1.026},
-  "ves": {map: "vestamap.jpg", bump: "vestabump.jpg", radius: 0.01, tilt: 29.0, rot: 0.223},
-  "cer": {map: "ceresmap.jpg", radius: 0.016, tilt: 4.0, rot: 0.378},
-  "jup": {map: "jupitermap.jpg", radius: 0.12, tilt: 3.12, rot: 0.414,
-          ring: {map: "jupiterrings.png", radius: 0.27, opacity: 0.5} },
-  "sat": {map: "saturnmap.jpg", radius: 0.12, tilt: 26.73, rot: 0.444, 
-          ring: {map: "saturnrings.png", radius: 0.26, opacity: 1.0} },
-  "ura": {map: "uranusmap.jpg", radius: 0.10, tilt: 97.86, rot: 0.718, 
-          ring: {map: "uranusrings.png", radius: 0.20, opacity: 0.5} },
-  "nep": {map: "neptunemap.jpg", radius: 0.10, tilt: 29.56, rot: 0.671, 
-          ring: {map: "neptunerings.png", radius: 0.25, opacity: 0.8} },
-  "plu": {map: "plutomap.jpg", radius: 0.02, tilt: 122.53, rot: 6.387}  
+  "sol": {map: "sunmap.jpg", radius: 1.2, tilt: 7.25, rot: 1.0438, rotation:[286.13, 63.87, 14.1844],
+          corona: {map: "solarcorona.jpg", radius:5.1} },
+  "mer": {map: "mercurymap.jpg", bump:"mercurybump.jpg", radius: 0.3, tilt: 0, rot: 58.646, rotation:[318.2274, 82.9623, 6.1385]},
+  "ven": {map: "venusmap.jpg", radius: 0.4, tilt: 177.3, rot: -4.05, rotation:[30.1871, 88.761, -1.481]},
+  "ter": {map: "earthmap.jpg", bump:"earthbump.jpg", clouds:"earthclouds.png", radius: 0.4, tilt: 23.45, rot: 0.9973, rotation:[90, 66.5607, 360.9856]},
+    "lun": {map: "moonmap.jpg", bump:"moonbump.jpg", radius: 0.25, tilt: 1.54, rot: 27.3217, rotation:[264.6051, 89.9784, 13.1763]},
+  "mar": {map: "marsmap.jpg", bump:"marsbump.jpg", clouds:"marsclouds.png", radius: 0.35, tilt: 25.19, rot: 1.026, rotation:[352.9076, 63.2821, 350.8919] },
+    "phob": {map: "phobosmap.jpg", bump: "phobosbump.jpg", radius: 0.05, tilt: 0.009, rot: 0.3189, rotation:[352.9259, 63.2928, 1128.8445]},
+    "deim": {map: "deimosmap.jpg", radius: 0.04, tilt: 0.889, rot: 1.2624, rotation:[352.801, 64.1656, 285.1618]},
+  "vest": {map: "vestamap.jpg", bump: "vestabump.jpg", radius: 0.1, tilt: 29.0, rot: 0.223, rotation:[330.8257, 57.7239, 1617.3329]},
+  "cer": {map: "ceresmap.jpg", radius: 0.16, tilt: 4.0, rot: 0.378, rotation:[331.5058, 77.8769, 952.1532]},
+  "jup": {map: "jupitermap.jpg", radius: 1.2, tilt: 3.12, rot: 0.414, rotation:[247.8167, 87.7835, 870.5360],
+          ring: {map: "jupiterrings.png", radius: 2.7, opacity: 0.5} },
+    "io": {map: "iomap.jpg", radius: 0.25, tilt: 0.0, rot: 1.7691, rotation:[247.7063, 87.7869, 203.4889]},
+    "euro": {map: "europamap.jpg", radius: 0.25, tilt: 0.016, rot: 3.5512, rotation:[247.93, 87.8008, 101.3747]},
+    "gany": {map: "ganymedemap.jpg", radius: 0.3, tilt: 0.068, rot: 7.1546, rotation:[248.6707, 87.8748, 50.3176]},
+    "call": {map: "callistomap.jpg", radius: 0.3, tilt: 0.356, rot: 16.689, rotation:[252.4849, 88.191, 21.5710]},
+  "sat": {map: "saturnmap.jpg", radius: 1.2, tilt: 26.73, rot: 0.444, rotation:[79.5275, 61.9478, 810.7939], 
+          ring: {map: "saturnrings.png", radius: 2.6, opacity: 1.0} },
+    "mima": {map: "mimasmap.jpg", radius: 0.1, tilt: 0.002, rot: 0.942, rotation:[79.5174, 61.9296, 381.9945]},
+    "ence": {map: "enceladusmap.jpg", radius: 0.1, tilt: 0.002, rot: 1.37, rotation:[79.5174, 61.9296, 262.7318]},
+    "teth": {map: "tethysmap.jpg", radius: 0.15, tilt: 0.001, rot: 1.888, rotation:[79.5174, 61.9296, 190.6979]},
+    "dion": {map: "dionemap.jpg", radius: 0.15, tilt: 0.005, rot: 2.737, rotation:[79.5174, 61.9296, 131.5349]},
+    "rhea": {map: "rheamap.jpg", radius: 0.2, tilt: 0.036, rot: 4.518, rotation:[79.507, 61.9729, 79.690]},
+    "tita": {map: "titanclouds.jpg", radius: 0.35, tilt: 0.629, rot: 15.95, rotation:[79.1738, 61.946, 22.577]},
+    "hype": {map: "hyperionmap.jpg", radius: 0.08, tilt: 0.564, rot: 21.28, rotation:[79.3687, 61.9625, 16.917]},
+    "iape": {map: "iapetusmap.jpg", radius: 0.15, tilt: 15.21, rot: 79.33, rotation:[49.608, 72.7238, 4.5379]},
+    "phoe": {map: "phoebemap.jpg", radius: 0.08, tilt: 26.723, rot: 0.4, rotation:[60.8478, 64.3305, 931.639]},
+  "ura": {map: "uranusmap.jpg", radius: 1.0, tilt: 97.86, rot: 0.718, rotation:[77.6467, -7.7218, 501.1601], 
+          ring: {map: "uranusrings.png", radius: 2.0, opacity: 0.5} },
+    "arie": {map: "arielmap.jpg", radius: 0.15, tilt: 0.0, rot: -2.520, rotation:[77.7555, -7.8066, -142.8357]},
+    "umbr": {map: "umbrielmap.jpg", radius: 0.15, tilt: 0.0, rot: -4.144, rotation:[77.7555, -7.8066, -86.8689]},
+    "titan": {map: "titaniamap.jpg", radius: 0.2, tilt: 0.0, rot: -8.706, rotation:[77.7555, -7.8066, -41.3514]},
+    "ober": {map: "oberonmap.jpg", radius: 0.2, tilt: 0.0, rot: -13.46, rotation:[77.7555, -7.8066, -26.7394]},
+    "mira": {map: "mirandamap.jpg", radius: 0.1, tilt: 0.0, rot: -1.413, rotation:[77.7538, -7.8265, -254.6906]},
+  "nep": {map: "neptunemap.jpg", radius: 1.0, tilt: 29.56, rot: 0.671,  rotation:[319.2351, 61.9736, 536.3128],
+          ring: {map: "neptunerings.png", radius: 2.5, opacity: 0.8} },
+    "trit": {map: "tritonmap.jpg", radius: 0.2, tilt: 0.01, rot: -5.877, rotation:[317.3413, 59.8764, -61.2573]},
+    "prot": {map: "proteusmap.jpg", radius: 0.1, tilt: 0.974, rot: 1.122, rotation:[318.631, 61.4993, 320.7654]},
+  "plu": {map: "plutomap.jpg", radius: 0.2, tilt: 122.53, rot: 6.387, rotation:[133.6817, -10.9977, 56.3625]},
+    "cha": {map: "charonmap.jpg", radius: 0.1, tilt: 0.0, rot: 6.387, rotation:[133.6817, -10.9977, 56.3625]}
 };
 
 
@@ -39,30 +65,51 @@ var substitutes = {
   "Earth": "ter",
   "Moon": "lun",
   "Mars": "mar",
-  "Vesta": "ves",
+  "Phobos": "phob",
+  "Deimos": "deim",
+  "Vesta": "vest",
   "Ceres": "cer",
   "Jupiter": "jup",
+  "Io": "io",
+  "Europa": "euro",
+  "Ganymede": "gany",
+  "Callisto": "call",
   "Saturn": "sat",
+  "Mimas": "mima",
+  "Enceladus": "ence",
+  "Tethys": "teth",
+  "Dione": "dion",
+  "Rhea": "rhea",
+  "Titan": "tita",
+  "Iapetus": "iape",
+  "Phoebe": "phoe",
   "Uranus": "ura",
+  "Ariel": "arie",
+  "Umbriel": "umbr",
+  "Titania": "titan",
+  "Oberon": "ober",
+  "Miranda": "mira",  
   "Neptune": "nep",
+  "Triton": "trit",
   "Pluto": "plu",
+  "Charon": "cha",
 };
 
-THREEx.Planets.createSun = function() { return THREEx.Planets.create("sun"); };
-THREEx.Planets.createMercury = function() { return THREEx.Planets.create("mercury"); };
-THREEx.Planets.createVenus = function() { return THREEx.Planets.create("venus"); };
-THREEx.Planets.createEarth = function() { return THREEx.Planets.create("earth", true); };
-THREEx.Planets.createMoon = function() { return THREEx.Planets.create("moon"); };
-THREEx.Planets.createMars = function() { return THREEx.Planets.create("mars"); };
-THREEx.Planets.createJupiter = function() { return THREEx.Planets.create("jupiter"); };
-THREEx.Planets.createJupiterRing = function() { return THREEx.Planets.createRing("jupiter"); };
-THREEx.Planets.createSaturn = function() { return THREEx.Planets.create("saturn", true); };
-THREEx.Planets.createSaturnRing = function() { return THREEx.Planets.createRing("saturn"); };
-THREEx.Planets.createUranus = function() { return THREEx.Planets.create("uranus", true); };
-THREEx.Planets.createUranusRing = function() { return THREEx.Planets.createRing("uranus"); };
-THREEx.Planets.createNeptune = function() { return THREEx.Planets.create("neptune"); };
-THREEx.Planets.createNeptuneRing = function() { return THREEx.Planets.createRing("neptune"); };
-THREEx.Planets.createPluto = function() { return THREEx.Planets.create("pluto"); };
+THREEx.Planets.createSun = function() { return THREEx.Planets.create("sol"); };
+THREEx.Planets.createMercury = function() { return THREEx.Planets.create("mer"); };
+THREEx.Planets.createVenus = function() { return THREEx.Planets.create("ven"); };
+THREEx.Planets.createEarth = function() { return THREEx.Planets.create("ter", true); };
+THREEx.Planets.createMoon = function() { return THREEx.Planets.create("lun"); };
+THREEx.Planets.createMars = function() { return THREEx.Planets.create("mar"); };
+THREEx.Planets.createJupiter = function() { return THREEx.Planets.create("jup"); };
+THREEx.Planets.createJupiterRing = function() { return THREEx.Planets.createRing("jup"); };
+THREEx.Planets.createSaturn = function() { return THREEx.Planets.create("sat", true); };
+THREEx.Planets.createSaturnRing = function() { return THREEx.Planets.createRing("sat"); };
+THREEx.Planets.createUranus = function() { return THREEx.Planets.create("ura", true); };
+THREEx.Planets.createUranusRing = function() { return THREEx.Planets.createRing("ura"); };
+THREEx.Planets.createNeptune = function() { return THREEx.Planets.create("nepe"); };
+THREEx.Planets.createNeptuneRing = function() { return THREEx.Planets.createRing("nep"); };
+THREEx.Planets.createPluto = function() { return THREEx.Planets.create("plu"); };
 
 THREEx.Planets.createStarfield = function() {
   var loader = new THREE.TextureLoader();
@@ -71,12 +118,12 @@ THREEx.Planets.createStarfield = function() {
     map  : texture,
     side  : THREE.BackSide
   })
-  var geometry = new THREE.SphereGeometry(100, 32, 32)
+  var geometry = new THREE.SphereGeometry(100000, 32, 32)
   var mesh = new THREE.Mesh(geometry, material)
   return mesh  
 }
     
-// Create body, skipextras truthy -> don't create cloud, ring etc.
+// Create body, skipextras true -> don't create cloud, ring etc.
 THREEx.Planets.create = function(body, skipextras) {
   if (!THREEx.Planets.params.hasOwnProperty(body)) {
     if (substitutes.hasOwnProperty(body)) body = substitutes[body];
@@ -88,7 +135,7 @@ THREEx.Planets.create = function(body, skipextras) {
   var p = THREEx.Planets.params[body], arg = {};
   var loader = new THREE.TextureLoader();
   
-  var geometry = new THREE.SphereGeometry(p.radius, 32, 32);
+  var geometry = new THREE.SphereGeometry(p.radius * THREEx.Planets.scale, 32, 32);
   
   arg.map = loader.load(THREEx.Planets.baseURL + p.map);
 
@@ -103,9 +150,9 @@ THREEx.Planets.create = function(body, skipextras) {
   if (body === "sol") { //ommmmmmm
     var material = new THREE.MeshBasicMaterial(arg);
   } else {
+    var material = new THREE.MeshPhongMaterial(arg);
     arg.specular = new THREE.Color( 0x333333 );
     arg.shininess = 0.1;
-    var material = new THREE.MeshPhongMaterial(arg);
   }
   var mesh = new THREE.Mesh(geometry, material);
   
@@ -125,8 +172,8 @@ THREEx.Planets.create = function(body, skipextras) {
   if (!skipextras && body === "sol") {
     mesh.add(THREEx.Planets.createCorona());
   }  
-
-  mesh.rotation.set(0, 0, THREE.Math.degToRad(p.tilt));  
+  mesh.rotateY(THREE.Math.degToRad(p.rotation[0]-180));    
+  mesh.rotateZ(THREE.Math.degToRad(90-p.rotation[1]));  
   return mesh;
 }
   
@@ -147,7 +194,7 @@ THREEx.Planets.createRings = function(body) {
   var p = THREEx.Planets.params[body], map = THREEx.Planets.baseURL + p.ring.map,
       loader = new THREE.TextureLoader();
   
-  var geometry = new THREEx.Planets.RingGeometry(p.radius * 1.05, p.ring.radius, 64, 64);
+  var geometry = new THREEx.Planets.RingGeometry(p.radius * THREEx.Planets.scale * 1.05, p.ring.radius * THREEx.Planets.scale, 64, 64);
   var material = new THREE.MeshPhongMaterial({
     map: loader.load(map),
     side: THREE.DoubleSide,
@@ -177,7 +224,7 @@ THREEx.Planets.createClouds = function(body) {
       loader = new THREE.TextureLoader();
 
   var mesh = new THREE.Mesh(
-    new THREE.SphereGeometry(p.radius * 1.01, 32, 32),
+    new THREE.SphereGeometry(p.radius * THREEx.Planets.scale * 1.01, 32, 32),
     new THREE.MeshPhongMaterial({
       map: loader.load(map),
       transparent: true
@@ -198,7 +245,7 @@ THREEx.Planets.createCorona = function() {
     blending: THREE.AdditiveBlending
 	});
 	var mesh = new THREE.Sprite(material);
-	mesh.scale.multiplyScalar(p.corona.radius);
+	mesh.scale.multiplyScalar(p.corona.radius * THREEx.Planets.scale);
 	mesh.name = "solcorona";
   return mesh;
 };
@@ -2232,12 +2279,15 @@ var settings = {
 
 
 var Orrery = {
-  version: '0.4'
+  version: '0.5'
 };
 
 var container, parNode, renderer, scene, camera,
     width, height, cfg, sbomesh,
     renderFcts= [];
+
+THREEx.Planets.baseURL = "images/maps/";
+THREEx.Planets.scale = 0.1;
 
 var display = function(config, date) {
   var dt = date || new Date(),

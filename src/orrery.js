@@ -1,11 +1,14 @@
 /* global THREE, THREEx, loader, getObject, updateObject, getOrbit, datetimepicker, particleshader, has, settings, $, px */
 var Orrery = {
-  version: '0.4'
+  version: '0.5'
 };
 
 var container, parNode, renderer, scene, camera,
     width, height, cfg, sbomesh,
     renderFcts= [];
+
+THREEx.Planets.baseURL = "images/maps/";
+THREEx.Planets.scale = 0.1;
 
 var display = function(config, date) {
   var dt = date || new Date(),

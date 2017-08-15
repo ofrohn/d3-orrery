@@ -4,7 +4,7 @@ var shell = require('shelljs/make'),
     vm = require('vm'),
     tar = require('tar-fs'),
     zlib = require('zlib'),
-    copy = "// Copyright 2015 Olaf Frohn https://github.com/ofrohn, see LICENSE\n",
+    copy = "// Copyright 2015-17 Olaf Frohn https://github.com/ofrohn, see LICENSE\n",
     begin = "!(function() {",
     end = "this.Orrery = Orrery;\n})();",
     filename = './orrery',
@@ -106,14 +106,14 @@ target.build = function() {
   fs.writeFileSync(filename + '.min.js', out);
   */
 
-  echo('Writing data');
+  //echo('Writing data');
 
   // zip data + prod. code + css
-  tar.pack('./', {
+  /*tar.pack('./', {
        entries: ['viewer.html', 'style.css', 'readme.md', 'LICENSE', 'orrery.js', 'orrery.min.js', 'data', 'images', 'lib/d3.min.js', 'lib/three.min.js'] 
      })
      .pipe(zlib.createGzip())
      .pipe(fs.createWriteStream(filename + '.tar.gz'))
-
+  */
   echo('Done');
 };
