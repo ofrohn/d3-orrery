@@ -22,7 +22,7 @@ body { margin:0; padding:0; overflow: hidden }
 #datetimepicker .date { display:inline-block; width:20px; height:14px; border:1px solid transparent; color:#eeb; font-weight: bold; text-align:right; vertical-align:middle; padding:2px 4px 2px 0; cursor:pointer; }
 #datetimepicker .grey { color:#999; }
 #datetimepicker .weekday { color:#666; font-sixe:11px; }
-#datetimepicker .weekend { color:#f00; }
+#datetimepicker .weekend { color:#c00; }
 #datetimepicker .selected { border:1px solid #fff; border-radius:3px; }
-#datetimepicker .today { background: rgba(255, 255, 0, 0.6); }
+#datetimepicker .today { background: rgba(153, 153, 204, 0.3); }
 
